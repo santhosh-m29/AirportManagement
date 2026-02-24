@@ -1,0 +1,23 @@
+
+Database: csv
+FrontEnd: tk
+
+
+LOGIN:
+
+AIRPORT MANAGEMENT:	
+ATC:
+	Airlines Management
+		Edit Airlines
+		Aircraft Information
+		Seating/Ticketing Data
+		Pilot/Crew Data
+		Flight Schedule
+		Passenger/Booking Information/Booking Counter
+	Gate and Terminal Information (DISPLAY)
+	Runway Information 
+		Manage Runways
+		Display 
+	Security/Check-in Data
+	Flight Schedule
+	Disruption/Exception
