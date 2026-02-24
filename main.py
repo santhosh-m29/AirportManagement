@@ -1,5 +1,11 @@
+# main_app.py
+
 import tkinter as tk
-from tkinter import messagebox
+from auth_module import show_passkey_page
+import airline_module
+import ticket_module
+import atc_module
+import checkin_module
 
 # ===================== MAIN WINDOW =====================
 root = tk.Tk()
@@ -13,97 +19,35 @@ main_container.pack(fill="both", expand=True)
 
 current_frame = None
 
-# ===================== PASSKEYS =====================
-PASSKEYS = {
-    "MANAGE AIRLINES": "air123",
-    "TICKET COUNTER": "ticket123",
-    "ATC": "atc123",
-    "CHECKIN": "check123"
-}
-
-# ===================== PAGE SWITCH =====================
-def switch_page(page_function, module_name=None):
+# ===================== PAGE SWITCH FUNCTION =====================
+def switch_page(page_function, *args):
     global current_frame
+
     if current_frame is not None:
         current_frame.destroy()
 
     current_frame = tk.Frame(main_container, bg="#0f172a")
     current_frame.pack(fill="both", expand=True)
 
-    if module_name:
-        page_function(current_frame, module_name)
-    else:
-        page_function(current_frame)
+    page_function(current_frame, switch_page, *args)
 
-# ===================== HEADER BAR =====================
-def create_header(parent, show_logout=False, show_back=False):
-    header = tk.Frame(parent, bg="#0f172a")
-    header.pack(fill="x", pady=10)
+# ===================== MODULE ROUTER =====================
+def route_module(module_name):
 
-    if show_logout:
-        tk.Button(header,
-                  text="Logout",
-                  bg="#ef4444",
-                  fg="white",
-                  font=("Segoe UI", 10, "bold"),
-                  relief="flat",
-                  command=lambda: switch_page(show_home)
-                  ).pack(side="left", padx=20)
+    module_routes = {
+        "MANAGE AIRLINES": airline_module.show_airline_dashboard,
+        "TICKET COUNTER": ticket_module.show_ticket_dashboard,
+        "ATC": atc_module.show_atc_dashboard,
+        "CHECKIN": checkin_module.show_checkin_dashboard
+    }
 
-    if show_back:
-        tk.Button(header,
-                  text="Back",
-                  bg="#475569",
-                  fg="white",
-                  font=("Segoe UI", 10, "bold"),
-                  relief="flat",
-                  command=lambda: switch_page(show_home)
-                  ).pack(side="right", padx=20)
-
-# ===================== LOGIN BOX COMPONENT =====================
-def create_login_box(parent, module_name):
-
-    card = tk.Frame(parent, bg="#1e293b", width=400, height=250)
-    card.place(relx=0.5, rely=0.5, anchor="center")
-
-    card.pack_propagate(False)
-
-    tk.Label(card,
-             text=f"{module_name}",
-             font=("Segoe UI", 18, "bold"),
-             bg="#1e293b",
-             fg="white").pack(pady=20)
-
-    tk.Label(card,
-             text="Enter Passkey",
-             font=("Segoe UI", 12),
-             bg="#1e293b",
-             fg="#cbd5e1").pack(pady=5)
-
-    entry = tk.Entry(card,
-                     show="*",
-                     font=("Segoe UI", 13),
-                     width=25,
-                     relief="flat")
-    entry.pack(pady=10)
-
-    def verify():
-        if entry.get() == PASSKEYS[module_name]:
-            switch_page(show_module_dashboard, module_name)
-        else:
-            messagebox.showerror("Access Denied", "Incorrect Passkey")
-
-    tk.Button(card,
-              text="Login",
-              font=("Segoe UI", 12, "bold"),
-              bg="#22c55e",
-              fg="white",
-              relief="flat",
-              width=15,
-              command=verify).pack(pady=15)
-
+    # Pass show_home into module
+    switch_page(module_routes[module_name], show_home)
 # ===================== HOME PAGE =====================
-def show_home(parent):
+
+
+
+def show_home(parent, switch_page):
 
     tk.Label(parent,
              text="✈ AIRPORT MANAGEMENT SYSTEM",
@@ -114,46 +58,24 @@ def show_home(parent):
     button_frame = tk.Frame(parent, bg="#0f172a")
     button_frame.pack()
 
-    def create_option(text, color):
-        return tk.Button(button_frame,
-                         text=text,
-                         font=("Segoe UI", 14, "bold"),
-                         width=25,
-                         height=2,
-                         bg=color,
-                         fg="white",
-                         activebackground="#1e293b",
-                         relief="flat",
-                         command=lambda: switch_page(show_login_page, text))
+    modules = [
+        ("MANAGE AIRLINES", "#2563eb"),
+        ("TICKET COUNTER", "#16a34a"),
+        ("ATC", "#d97706"),
+        ("CHECKIN", "#db2777")
+    ]
 
-    create_option("MANAGE AIRLINES", "#2563eb").pack(pady=15)
-    create_option("TICKET COUNTER", "#16a34a").pack(pady=15)
-    create_option("ATC", "#d97706").pack(pady=15)
-    create_option("CHECKIN", "#db2777").pack(pady=15)
-
-# ===================== LOGIN PAGE =====================
-def show_login_page(parent, module_name):
-
-    create_header(parent, show_back=True)
-
-    create_login_box(parent, module_name)
-
-# ===================== MODULE DASHBOARD =====================
-def show_module_dashboard(parent, module_name):
-
-    create_header(parent, show_logout=True)
-
-    tk.Label(parent,
-             text=f"{module_name} DASHBOARD",
-             font=("Segoe UI", 24, "bold"),
-             fg="white",
-             bg="#0f172a").pack(pady=80)
-
-    tk.Label(parent,
-             text="Module controls will be implemented here",
-             font=("Segoe UI", 14),
-             fg="#cbd5e1",
-             bg="#0f172a").pack()
+    for name, color in modules:
+        tk.Button(button_frame,
+                  text=name,
+                  font=("Segoe UI", 14, "bold"),
+                  width=25,
+                  height=2,
+                  bg=color,
+                  fg="white",
+                  relief="flat",
+                  command=lambda m=name: switch_page(show_passkey_page, m, route_module, show_home)
+                  ).pack(pady=15)
 
 # ===================== START =====================
 switch_page(show_home)
