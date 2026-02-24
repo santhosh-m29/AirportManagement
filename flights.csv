@@ -1,3 +1,1 @@
-flight_id	airline_id	body	seats	source	destination
-					
-		 			
+flight_id,airline_id,body,seats,source,destination,duration,departure_time
