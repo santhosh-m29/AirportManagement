@@ -1,0 +1,47 @@
+
+Database: csv
+FrontEnd: tk
+
+AIRPORT MANAGEMENT:	
+
+	MANAGE AIRLINES:
+		PASSKEY:
+			Edit Airlines
+				Aircraft Information 
+				Pilot/Crew Data
+		
+	TICKET COUNTER:
+		PASSKEY:
+				Seating/Ticketing Data		
+				Booking Counter
+	
+	ATC:
+		PASSKEY:
+			Gate and Terminal Information (DISPLAY)
+			Runway Information 
+				Manage Runways
+				Display 
+			Flight Schedule
+			Disruption/Exception
+
+	CHECKIN:
+		PASSKEY:
+			Security/Check-in Data
+				Baggage constrains
+	
+
+Program Flow:
+
+Once the application is opened, the main AIRPORT management options are displayed.
+(EG: MANAGE AIRLINES, TICKET COUNTER,ETC)	
+
+
+once any option is navigated to, it'll ask for the PASSKEY.
+Once the PASSKEY is veryfied, it then proceeds to display the controls.
+
+every sub window is either a tkinter frame/canvas, inside a single mainloop(window)
+each UI canvas/page must have a destroy function that destroyes the elements of the page once the page is exited. 
+
+give modules list ( with list of functions inside ) required for this application.
+explain how to integrate each module in such a way that the whole program required just one main tk window.
+	
