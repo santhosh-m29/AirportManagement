@@ -1,1 +1,11 @@
-p_id,name,class,seat_no,airline_id,source,destination,boarding_time,luggage_weight
+passenger_id,name,flight_id,seat,checked_in,baggage_weight
+PASS001,Ahmed Hassan,FL001,12A,Yes,23
+PASS002,Fatima Ali,FL001,12B,Yes,20
+PASS003,Mohammed Ibrahim,FL001,14A,No,0
+PASS004,Layla Mohamed,FL002,15C,Yes,25
+PASS005,Omar Khan,FL002,16A,No,0
+PASS006,Aisha Patel,FL003,18B,Yes,22
+PASS007,Hassan Ahmed,FL003,19C,Yes,21
+PASS008,Zainab Ahmed,FL004,11A,No,0
+PASS009,Mustafa Hassan,FL005,20D,Yes,24
+12827,Santhosh M,88787,9,Yes,5.0

@@ -1,0 +1,4 @@
+runway_id,length,status
+R1,4000,Available
+R2,3500,Available
+R3,4500,Maintenance

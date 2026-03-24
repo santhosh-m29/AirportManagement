@@ -1,1 +1,10 @@
-crew_id,category,name,airline_id,flight_id
+crew_id,name,role,airline_id
+CREW001,John Smith,Captain,AIR001
+CREW002,Sarah Johnson,First Officer,AIR001
+CREW003,Michael Brown,Head Steward,AIR001
+CREW004,Emma Davis,Captain,AIR002
+CREW005,David Wilson,First Officer,AIR002
+CREW006,Lisa Anderson,Head Steward,AIR002
+CREW007,Robert Taylor,Captain,AIR003
+CREW008,Jennifer Lee,First Officer,AIR003
+CREW009,James Martin,Head Steward,AIR003
