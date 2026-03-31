@@ -1,8 +1,8 @@
 flight_id,airline_id,origin,destination,departure,arrival,gate,runway,status
-FL001,AIR001,Dubai,London,08:00,14:30,A1,R1,On Schedule
-FL002,AIR001,Dubai,Paris,10:00,16:00,A2,R2,On Schedule
-FL003,AIR002,Doha,New York,11:00,20:00,B1,R1,On Schedule
+FL001,AIR001,Dubai,London,08:00,14:30,A1,R1,Delayed
+FL002,AIR001,Dubai,Paris,10:00,16:00,A2,R2,Delayed
+FL003,AIR002,Doha,New York,11:00,20:00,B1,R1,Delayed
 FL004,AIR002,Doha,London,09:00,15:30,B2,R2,Delayed
-FL005,AIR003,Singapore,Sydney,23:00,11:00,C1,R1,On Schedule
-FL006,AIR004,Bangkok,Manila,07:00,09:30,D1,R2,On Schedule
+FL005,AIR003,Singapore,Sydney,23:00,11:00,C1,R1,Delayed
+FL006,AIR004,Bangkok,Manila,07:00,09:30,D1,R2,Delayed
 FL007,AIR005,Abu Dhabi,London,12:00,18:30,E1,R1,On Schedule

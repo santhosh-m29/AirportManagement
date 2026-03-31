@@ -54,25 +54,25 @@ def show_atc_dashboard(parent, switch_page, back_page, back_args):
                          command=command)
     
     create_option("Gate Management",
-                  lambda: switch_page(show_gate_management, show_home)
+                  lambda: switch_page(show_gate_management, show_atc_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
     create_option("Runway Management",
-                  lambda: switch_page(show_runway_management, show_home)
+                  lambda: switch_page(show_runway_management, show_atc_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
     create_option("Flight Schedule",
-                  lambda: switch_page(show_flight_schedule, show_home)
+                  lambda: switch_page(show_flight_schedule, show_atc_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
     create_option("Flight Status Updates",
-                  lambda: switch_page(show_flight_status, show_home)
+                  lambda: switch_page(show_flight_status, show_atc_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
 # ===================== GATE MANAGEMENT PAGE =====================
-def show_gate_management(parent, switch_page, show_home):
+def show_gate_management(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Gate Management", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -109,17 +109,17 @@ def show_gate_management(parent, switch_page, show_home):
             new_status = "Available"
         
         tk.Button(row_frame, text=action_text, bg=BTN_PRIMARY, fg="white", relief="flat", width=8,
-                  command=lambda gid=gate['gate_id'], ns=new_status: update_gate_status(gid, ns, switch_page, show_gate_management, show_home)).pack(side="left", padx=5)
+                  command=lambda gid=gate['gate_id'], ns=new_status: update_gate_status(gid, ns, switch_page, show_gate_management, back_page, back_args)).pack(side="left", padx=5)
 
-def update_gate_status(gate_id, new_status, switch_page, current_page, show_home):
+def update_gate_status(gate_id, new_status, switch_page, current_page, back_page, back_args):
     db_utils.update_gate_status(gate_id, new_status)
     messagebox.showinfo("Success", f"Gate {gate_id} status updated to {new_status}!")
-    switch_page(current_page, show_home)
+    switch_page(current_page, back_page, back_args)
 
 # ===================== RUNWAY MANAGEMENT PAGE =====================
-def show_runway_management(parent, switch_page, show_home):
+def show_runway_management(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Runway Management", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -156,17 +156,17 @@ def show_runway_management(parent, switch_page, show_home):
             new_status = "Available"
         
         tk.Button(row_frame, text=action_text, bg=BTN_PRIMARY, fg="white", relief="flat", width=8,
-                  command=lambda rid=runway['runway_id'], ns=new_status: update_runway_status(rid, ns, switch_page, show_runway_management, show_home)).pack(side="left", padx=5)
+                  command=lambda rid=runway['runway_id'], ns=new_status: update_runway_status(rid, ns, switch_page, show_runway_management, back_page, back_args)).pack(side="left", padx=5)
 
-def update_runway_status(runway_id, new_status, switch_page, current_page, show_home):
+def update_runway_status(runway_id, new_status, switch_page, current_page, back_page, back_args):
     db_utils.update_runway_status(runway_id, new_status)
     messagebox.showinfo("Success", f"Runway {runway_id} status updated to {new_status}!")
-    switch_page(current_page, show_home)
+    switch_page(current_page, back_page, back_args)
 
 # ===================== FLIGHT SCHEDULE PAGE =====================
-def show_flight_schedule(parent, switch_page, show_home):
+def show_flight_schedule(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Flight Schedule", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -200,9 +200,9 @@ def show_flight_schedule(parent, switch_page, show_home):
         tk.Label(row_frame, text=flight['runway'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=8).pack(side="left")
 
 # ===================== FLIGHT STATUS PAGE =====================
-def show_flight_status(parent, switch_page, show_home):
+def show_flight_status(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Flight Status Updates", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -234,9 +234,9 @@ def show_flight_status(parent, switch_page, show_home):
         
         new_status = "Delayed" if flight['status'] == "On Schedule" else "On Schedule"
         tk.Button(row_frame, text="Change", bg=BTN_SECONDARY, fg="white", relief="flat", width=8,
-                  command=lambda fid=flight['flight_id'], ns=new_status: update_flight_status(fid, ns, switch_page, show_flight_status, show_home)).pack(side="left", padx=5)
+                  command=lambda fid=flight['flight_id'], ns=new_status: update_flight_status(fid, ns, switch_page, show_flight_status, back_page, back_args)).pack(side="left", padx=5)
 
-def update_flight_status(flight_id, new_status, switch_page, current_page, show_home):
+def update_flight_status(flight_id, new_status, switch_page, current_page, back_page, back_args):
     db_utils.update_flight_status(flight_id, new_status)
     messagebox.showinfo("Success", f"Flight {flight_id} status updated to {new_status}!")
-    switch_page(current_page, show_home)
+    switch_page(current_page, back_page, back_args)
