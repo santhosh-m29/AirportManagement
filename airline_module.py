@@ -170,11 +170,20 @@ def show_add_airline_form(parent, switch_page, back_page, back_args):
     form_frame = tk.Frame(parent, bg=BG_COLOR)
     form_frame.pack(pady=20)
 
+
+    # Auto-increment Airline ID
+    airlines = db_utils.get_all_airlines()
+    if airlines:
+        last_id = airlines[-1]['airline_id']
+        prefix = ''.join([c for c in last_id if not c.isdigit()])
+        num = int(''.join([c for c in last_id if c.isdigit()])) + 1
+        new_id = f"{prefix}{num:03d}"
+    else:
+        new_id = "AIR001"
     tk.Label(form_frame, text="Airline ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w")
-    id_var = tk.StringVar()
-    id_entry = tk.Entry(form_frame, textvariable=id_var, width=30)
+    id_var = tk.StringVar(value=new_id)
+    id_entry = tk.Entry(form_frame, textvariable=id_var, width=30, state="disabled")
     id_entry.pack(pady=5)
-    id_entry.bind("<Return>", lambda e: add_airline())
 
     tk.Label(form_frame, text="Airline Name:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
     name_var = tk.StringVar()
@@ -188,8 +197,9 @@ def show_add_airline_form(parent, switch_page, back_page, back_args):
     flights_entry.pack(pady=5)
     flights_entry.bind("<Return>", lambda e: add_airline())
 
+
     def add_airline():
-        if not id_var.get() or not name_var.get():
+        if not name_var.get():
             messagebox.showerror("Error", "All fields are required!")
             return
         db_utils.add_airline(id_var.get(), name_var.get(), flights_var.get())

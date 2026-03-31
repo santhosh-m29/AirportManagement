@@ -112,36 +112,76 @@ def show_booking_form(parent, switch_page, back_page, back_args):
     form_frame = tk.Frame(parent, bg=BG_COLOR)
     form_frame.pack(pady=20)
 
+    # Auto-increment Passenger ID
+    passengers = db_utils.get_all_passengers()
+    if passengers:
+        last_id = passengers[-1]['passenger_id']
+        prefix = ''.join([c for c in last_id if not c.isdigit()])
+        num = int(''.join([c for c in last_id if c.isdigit()])) + 1
+        new_pid = f"{prefix}{num:03d}"
+    else:
+        new_pid = "PASS001"
     tk.Label(form_frame, text="Passenger ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w")
-    passenger_id_var = tk.StringVar()
-    passenger_id_entry = tk.Entry(form_frame, textvariable=passenger_id_var, width=30)
+    passenger_id_var = tk.StringVar(value=new_pid)
+    passenger_id_entry = tk.Entry(form_frame, textvariable=passenger_id_var, width=30, state="disabled")
     passenger_id_entry.pack(pady=5)
-    passenger_id_entry.bind("<Return>", lambda e: book_ticket())
 
     tk.Label(form_frame, text="Passenger Name:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
     passenger_name_var = tk.StringVar()
     passenger_name_entry = tk.Entry(form_frame, textvariable=passenger_name_var, width=30)
     passenger_name_entry.pack(pady=5)
-    passenger_name_entry.bind("<Return>", lambda e: book_ticket())
 
-    tk.Label(form_frame, text="Flight ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
-    flight_id_var = tk.StringVar()
-    flight_id_entry = tk.Entry(form_frame, textvariable=flight_id_var, width=30)
-    flight_id_entry.pack(pady=5)
-    flight_id_entry.bind("<Return>", lambda e: book_ticket())
+    # Source and Destination
+    tk.Label(form_frame, text="Source:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    source_var = tk.StringVar()
+    source_entry = tk.Entry(form_frame, textvariable=source_var, width=30)
+    source_entry.pack(pady=5)
+
+    tk.Label(form_frame, text="Destination:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    dest_var = tk.StringVar()
+    dest_entry = tk.Entry(form_frame, textvariable=dest_var, width=30)
+    dest_entry.pack(pady=5)
+
+    # Button to search flights
+    def show_flights():
+        flights = [f for f in db_utils.get_all_flights() if f['origin'].lower() == source_var.get().strip().lower() and f['destination'].lower() == dest_var.get().strip().lower()]
+        if not flights:
+            messagebox.showinfo("No Flights", "No flights found for the selected route.")
+            return
+        # Show flights in a new window for selection
+        select_win = tk.Toplevel(parent)
+        select_win.title("Select Flight")
+        select_win.configure(bg=BG_COLOR)
+        tk.Label(select_win, text="Select a Flight", font=("Segoe UI", 14, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=10)
+        for flight in flights:
+            btn = tk.Button(select_win, text=f"{flight['flight_id']} | {flight['origin']} -> {flight['destination']} | {flight['departure']}",
+                            font=("Segoe UI", 11), bg=BTN_PRIMARY, fg="white", relief="flat",
+                            command=lambda f=flight: select_flight(f, select_win))
+            btn.pack(pady=5, padx=10, fill="x")
+
+    selected_flight = {'flight_id': None}
+
+    def select_flight(flight, win):
+        selected_flight['flight_id'] = flight['flight_id']
+        win.destroy()
+        seat_entry.focus_set()
+
+    tk.Button(form_frame, text="Show Available Flights", bg=BTN_SECONDARY, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
+              command=show_flights).pack(pady=10)
 
     tk.Label(form_frame, text="Seat Number:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
     seat_var = tk.StringVar()
     seat_entry = tk.Entry(form_frame, textvariable=seat_var, width=30)
     seat_entry.pack(pady=5)
-    seat_entry.bind("<Return>", lambda e: book_ticket())
 
     def book_ticket():
-        if not all([passenger_id_var.get(), passenger_name_var.get(), flight_id_var.get(), seat_var.get()]):
+        if not all([passenger_name_var.get(), source_var.get(), dest_var.get(), seat_var.get()]):
             messagebox.showerror("Error", "All fields are required!")
             return
-        
-        db_utils.add_passenger(passenger_id_var.get(), passenger_name_var.get(), flight_id_var.get(), seat_var.get())
+        if not selected_flight['flight_id']:
+            messagebox.showerror("Error", "Please select a flight.")
+            return
+        db_utils.add_passenger(passenger_id_var.get(), passenger_name_var.get(), selected_flight['flight_id'], seat_var.get())
         messagebox.showinfo("Success", f"Ticket booked successfully for {passenger_name_var.get()}!")
         switch_page(back_page, *back_args)
 

@@ -78,10 +78,23 @@ def show_gate_management(parent, switch_page, back_page, back_args):
 
     gates = db_utils.get_all_gates()
 
-    # Create a frame for the list
-    list_frame = tk.Frame(parent, bg=CARD_COLOR, width=700, height=350)
-    list_frame.pack(padx=20, pady=10, fill="both", expand=True)
-    list_frame.pack_propagate(False)
+    # Add a canvas and scrollbar for scrolling
+    container = tk.Frame(parent, bg=CARD_COLOR, width=700, height=350)
+    container.pack(padx=20, pady=10, fill="both", expand=True)
+    container.pack_propagate(False)
+
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=700, height=350)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    list_frame = tk.Frame(canvas, bg=CARD_COLOR)
+    canvas.create_window((0, 0), window=list_frame, anchor="nw")
+
+    def on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    list_frame.bind("<Configure>", on_frame_configure)
 
     # List header
     header_frame = tk.Frame(list_frame, bg="#475569")
@@ -97,17 +110,14 @@ def show_gate_management(parent, switch_page, back_page, back_args):
         row_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(row_frame, text=gate['gate_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
         tk.Label(row_frame, text=gate['terminal'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
-        
         status_color = "#22c55e" if gate['status'] == "Available" else "#ef4444"
         tk.Label(row_frame, text=gate['status'], font=("Segoe UI", 10), fg=status_color, bg=CARD_COLOR, width=15).pack(side="left")
-        
         if gate['status'] == "Available":
             action_text = "Occupy"
             new_status = "Occupied"
         else:
             action_text = "Release"
             new_status = "Available"
-        
         tk.Button(row_frame, text=action_text, bg=BTN_PRIMARY, fg="white", relief="flat", width=8,
                   command=lambda gid=gate['gate_id'], ns=new_status: update_gate_status(gid, ns, switch_page, show_gate_management, back_page, back_args)).pack(side="left", padx=5)
 
