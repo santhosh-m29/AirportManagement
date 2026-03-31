@@ -10,7 +10,7 @@ import checkin_module
 # ===================== MAIN WINDOW =====================
 root = tk.Tk()
 root.title("Airport Management System")
-root.geometry("1000x600")
+root.geometry("1000x700")
 root.configure(bg="#0f172a")
 root.resizable(False, False)
 
@@ -42,7 +42,7 @@ def route_module(module_name):
     }
 
     # Pass show_home into module
-    switch_page(module_routes[module_name], show_home)
+    switch_page(module_routes[module_name], show_home, ())
 # ===================== HOME PAGE =====================
 
 
@@ -74,7 +74,7 @@ def show_home(parent, switch_page):
                   bg=color,
                   fg="white",
                   relief="flat",
-                  command=lambda m=name: switch_page(show_passkey_page, m, route_module, show_home)
+                  command=lambda m=name: switch_page(show_passkey_page, m, route_module, show_home, ())
                   ).pack(pady=15)
 
 # ===================== START =====================

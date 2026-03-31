@@ -15,23 +15,23 @@ BTN_DANGER = "#ef4444"
 BTN_SECONDARY = "#475569"
 
 # ===================== HEADER =====================
-def create_header(parent, switch_page, show_home):
+def create_header(parent, switch_page, back_page, back_args):
     header = tk.Frame(parent, bg=BG_COLOR)
     header.pack(fill="x", pady=10)
 
     tk.Button(header,
-              text="Logout",
+              text="Back",
               bg=BTN_DANGER,
               fg="white",
               font=("Segoe UI", 10, "bold"),
               relief="flat",
-              command=lambda: switch_page(show_home)
+              command=lambda: switch_page(back_page, *back_args)
               ).pack(side="left", padx=20)
 
 # ===================== MAIN DASHBOARD =====================
-def show_checkin_dashboard(parent, switch_page, show_home):
+def show_checkin_dashboard(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent,
              text="CHECKIN DESK",
@@ -54,21 +54,21 @@ def show_checkin_dashboard(parent, switch_page, show_home):
                          command=command)
     
     create_option("Check-in Passenger",
-                  lambda: switch_page(show_checkin_form, show_home)
+                  lambda: switch_page(show_checkin_form, show_checkin_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
     create_option("View Baggage Info",
-                  lambda: switch_page(show_baggage_info, show_home)
+                  lambda: switch_page(show_baggage_info, show_checkin_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
     create_option("Checked-in Passengers",
-                  lambda: switch_page(show_checkedin_passengers, show_home)
+                  lambda: switch_page(show_checkedin_passengers, show_checkin_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
 # ===================== CHECK-IN FORM PAGE =====================
-def show_checkin_form(parent, switch_page, show_home):
+def show_checkin_form(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Passenger Check-in", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -77,11 +77,15 @@ def show_checkin_form(parent, switch_page, show_home):
 
     tk.Label(form_frame, text="Passenger ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w")
     passenger_id_var = tk.StringVar()
-    tk.Entry(form_frame, textvariable=passenger_id_var, width=30).pack(pady=5)
+    passenger_id_entry = tk.Entry(form_frame, textvariable=passenger_id_var, width=30)
+    passenger_id_entry.pack(pady=5)
+    passenger_id_entry.bind("<Return>", lambda e: process_checkin())
 
     tk.Label(form_frame, text="Baggage Weight (kg):", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
     baggage_var = tk.StringVar(value="0")
-    tk.Entry(form_frame, textvariable=baggage_var, width=30).pack(pady=5)
+    baggage_entry = tk.Entry(form_frame, textvariable=baggage_var, width=30)
+    baggage_entry.pack(pady=5)
+    baggage_entry.bind("<Return>", lambda e: process_checkin())
 
     def process_checkin():
         if not passenger_id_var.get():
@@ -108,15 +112,15 @@ def show_checkin_form(parent, switch_page, show_home):
         
         db_utils.update_passenger_checkin(passenger_id_var.get(), "Yes", str(baggage))
         messagebox.showinfo("Success", f"Passenger {passenger['name']} checked in successfully!\nBaggage: {baggage}kg")
-        switch_page(show_checkin_dashboard, show_home)
+        switch_page(back_page, *back_args)
 
     tk.Button(form_frame, text="Process Check-in", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
               command=process_checkin).pack(pady=20)
 
 # ===================== BAGGAGE INFO PAGE =====================
-def show_baggage_info(parent, switch_page, show_home):
+def show_baggage_info(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Baggage Information", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -147,9 +151,9 @@ def show_baggage_info(parent, switch_page, show_home):
         tk.Label(row_frame, text=passenger['checked_in'], font=("Segoe UI", 9), fg=status_color, bg=CARD_COLOR, width=12).pack(side="left")
 
 # ===================== CHECKED-IN PASSENGERS PAGE =====================
-def show_checkedin_passengers(parent, switch_page, show_home):
+def show_checkedin_passengers(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Checked-in Passengers", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 

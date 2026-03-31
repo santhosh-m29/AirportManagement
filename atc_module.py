@@ -15,23 +15,23 @@ BTN_DANGER = "#ef4444"
 BTN_SECONDARY = "#475569"
 
 # ===================== HEADER =====================
-def create_header(parent, switch_page, show_home):
+def create_header(parent, switch_page, back_page, back_args):
     header = tk.Frame(parent, bg=BG_COLOR)
     header.pack(fill="x", pady=10)
 
     tk.Button(header,
-              text="Logout",
+              text="Back",
               bg=BTN_DANGER,
               fg="white",
               font=("Segoe UI", 10, "bold"),
               relief="flat",
-              command=lambda: switch_page(show_home)
+              command=lambda: switch_page(back_page, *back_args)
               ).pack(side="left", padx=20)
 
 # ===================== MAIN DASHBOARD =====================
-def show_atc_dashboard(parent, switch_page, show_home):
+def show_atc_dashboard(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent,
              text="ATC OPERATIONS",

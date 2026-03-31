@@ -15,23 +15,23 @@ BTN_DANGER = "#ef4444"
 BTN_SECONDARY = "#475569"
 
 # ===================== HEADER =====================
-def create_header(parent, switch_page, show_home):
+def create_header(parent, switch_page, back_page, back_args):
     header = tk.Frame(parent, bg=BG_COLOR)
     header.pack(fill="x", pady=10)
 
     tk.Button(header,
-              text="Logout",
+              text="Back",
               bg=BTN_DANGER,
               fg="white",
               font=("Segoe UI", 10, "bold"),
               relief="flat",
-              command=lambda: switch_page(show_home)
+              command=lambda: switch_page(back_page, *back_args)
               ).pack(side="left", padx=20)
 
 # ===================== MAIN DASHBOARD =====================
-def show_ticket_dashboard(parent, switch_page, show_home):
+def show_ticket_dashboard(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent,
              text="TICKET COUNTER",
@@ -54,21 +54,21 @@ def show_ticket_dashboard(parent, switch_page, show_home):
                          command=command)
     
     create_option("View Available Flights",
-                  lambda: switch_page(show_flights_list, show_home)
+                  lambda: switch_page(show_flights_list, show_ticket_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
     create_option("Book Ticket",
-                  lambda: switch_page(show_booking_form, show_home)
+                  lambda: switch_page(show_booking_form, show_ticket_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
     create_option("View Bookings",
-                  lambda: switch_page(show_bookings_list, show_home)
+                  lambda: switch_page(show_bookings_list, show_ticket_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
 # ===================== FLIGHTS LIST PAGE =====================
-def show_flights_list(parent, switch_page, show_home):
+def show_flights_list(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Available Flights", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -103,9 +103,9 @@ def show_flights_list(parent, switch_page, show_home):
         tk.Label(row_frame, text=flight['status'], font=("Segoe UI", 9), fg=status_color, bg=CARD_COLOR, width=12).pack(side="left")
 
 # ===================== BOOKING FORM PAGE =====================
-def show_booking_form(parent, switch_page, show_home):
+def show_booking_form(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Book a Ticket", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
@@ -114,19 +114,27 @@ def show_booking_form(parent, switch_page, show_home):
 
     tk.Label(form_frame, text="Passenger ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w")
     passenger_id_var = tk.StringVar()
-    tk.Entry(form_frame, textvariable=passenger_id_var, width=30).pack(pady=5)
+    passenger_id_entry = tk.Entry(form_frame, textvariable=passenger_id_var, width=30)
+    passenger_id_entry.pack(pady=5)
+    passenger_id_entry.bind("<Return>", lambda e: book_ticket())
 
     tk.Label(form_frame, text="Passenger Name:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
     passenger_name_var = tk.StringVar()
-    tk.Entry(form_frame, textvariable=passenger_name_var, width=30).pack(pady=5)
+    passenger_name_entry = tk.Entry(form_frame, textvariable=passenger_name_var, width=30)
+    passenger_name_entry.pack(pady=5)
+    passenger_name_entry.bind("<Return>", lambda e: book_ticket())
 
     tk.Label(form_frame, text="Flight ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
     flight_id_var = tk.StringVar()
-    tk.Entry(form_frame, textvariable=flight_id_var, width=30).pack(pady=5)
+    flight_id_entry = tk.Entry(form_frame, textvariable=flight_id_var, width=30)
+    flight_id_entry.pack(pady=5)
+    flight_id_entry.bind("<Return>", lambda e: book_ticket())
 
     tk.Label(form_frame, text="Seat Number:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
     seat_var = tk.StringVar()
-    tk.Entry(form_frame, textvariable=seat_var, width=30).pack(pady=5)
+    seat_entry = tk.Entry(form_frame, textvariable=seat_var, width=30)
+    seat_entry.pack(pady=5)
+    seat_entry.bind("<Return>", lambda e: book_ticket())
 
     def book_ticket():
         if not all([passenger_id_var.get(), passenger_name_var.get(), flight_id_var.get(), seat_var.get()]):
@@ -135,15 +143,15 @@ def show_booking_form(parent, switch_page, show_home):
         
         db_utils.add_passenger(passenger_id_var.get(), passenger_name_var.get(), flight_id_var.get(), seat_var.get())
         messagebox.showinfo("Success", f"Ticket booked successfully for {passenger_name_var.get()}!")
-        switch_page(show_ticket_dashboard, show_home)
+        switch_page(back_page, *back_args)
 
     tk.Button(form_frame, text="Book Ticket", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
               command=book_ticket).pack(pady=20)
 
 # ===================== BOOKINGS LIST PAGE =====================
-def show_bookings_list(parent, switch_page, show_home):
+def show_bookings_list(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
 
     tk.Label(parent, text="Current Bookings", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 

@@ -16,7 +16,7 @@ PASSKEYS = {
     "CHECKIN": "check123"
 }
 
-def create_header(parent, switch_page, show_home):
+def create_header(parent, switch_page, back_page, back_args):
     header = tk.Frame(parent, bg=BG_COLOR)
     header.pack(fill="x", pady=10)
 
@@ -26,12 +26,12 @@ def create_header(parent, switch_page, show_home):
               bg=BTN_SECONDARY,
               fg="white",
               relief="flat",
-              command=lambda: switch_page(show_home)
+              command=lambda: switch_page(back_page, *back_args)
               ).pack(side="left", padx=20)
 
-def show_passkey_page(parent, switch_page, module_name, route_callback, show_home):
+def show_passkey_page(parent, switch_page, module_name, route_callback, back_page, back_args):
     parent.configure(bg=BG_COLOR)
-    create_header(parent, switch_page, show_home)
+    create_header(parent, switch_page, back_page, back_args)
     
 
     card = tk.Frame(parent, bg=CARD_COLOR, width=400, height=250)
@@ -46,6 +46,7 @@ def show_passkey_page(parent, switch_page, module_name, route_callback, show_hom
 
     entry = tk.Entry(card, show="*", font=("Segoe UI", 13), width=25)
     entry.pack(pady=15)
+    entry.bind("<Return>", lambda e: verify())
 
     def verify():
         if entry.get() == PASSKEYS[module_name]:
