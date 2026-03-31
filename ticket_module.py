@@ -65,6 +65,10 @@ def show_ticket_dashboard(parent, switch_page, back_page, back_args):
                   lambda: switch_page(show_bookings_list, show_ticket_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
+    create_option("Print Ticket",
+                  lambda: show_print_ticket_prompt(parent)
+                  ).pack(pady=15)
+
 # ===================== FLIGHTS LIST PAGE =====================
 def show_flights_list(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
@@ -174,6 +178,10 @@ def show_booking_form(parent, switch_page, back_page, back_args):
     seat_entry = tk.Entry(form_frame, textvariable=seat_var, width=30)
     seat_entry.pack(pady=5)
 
+    def on_book_success():
+        if messagebox.askyesno("Print Ticket", "Ticket booked. Do you want to print it now?"):
+            show_print_ticket_prompt(parent, passenger_id_var.get())
+
     def book_ticket():
         if not all([passenger_name_var.get(), source_var.get(), dest_var.get(), seat_var.get()]):
             messagebox.showerror("Error", "All fields are required!")
@@ -183,10 +191,14 @@ def show_booking_form(parent, switch_page, back_page, back_args):
             return
         db_utils.add_passenger(passenger_id_var.get(), passenger_name_var.get(), selected_flight['flight_id'], seat_var.get())
         messagebox.showinfo("Success", f"Ticket booked successfully for {passenger_name_var.get()}!")
+        on_book_success()
         switch_page(back_page, *back_args)
 
     tk.Button(form_frame, text="Book Ticket", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
-              command=book_ticket).pack(pady=20)
+              command=book_ticket).pack(pady=(20, 8))
+
+    tk.Button(form_frame, text="Print Ticket", bg=BTN_PRIMARY, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
+              command=lambda: show_print_ticket_prompt(parent, passenger_id_var.get())).pack(pady=8)
 
 # ===================== BOOKINGS LIST PAGE =====================
 def show_bookings_list(parent, switch_page, back_page, back_args):
@@ -218,3 +230,65 @@ def show_bookings_list(parent, switch_page, back_page, back_args):
         tk.Label(row_frame, text=passenger['name'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
         tk.Label(row_frame, text=passenger['flight_id'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
         tk.Label(row_frame, text=passenger['seat'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+
+
+def show_print_ticket_prompt(parent, default_passenger_id=None):
+    root_window = parent.winfo_toplevel() if hasattr(parent, 'winfo_toplevel') else parent
+    prompt_win = tk.Toplevel(root_window)
+    prompt_win.title("Print Ticket")
+    prompt_win.configure(bg=BG_COLOR)
+    prompt_win.geometry("420x380")
+
+    tk.Label(prompt_win, text="Print Ticket", font=("Segoe UI", 18, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=15)
+
+    tk.Label(prompt_win, text="Enter Passenger ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=(10, 5))
+    passenger_id_var = tk.StringVar(value=default_passenger_id or "")
+    passenger_id_entry = tk.Entry(prompt_win, textvariable=passenger_id_var, width=30)
+    passenger_id_entry.pack(pady=5)
+
+    ticket_frame = tk.Frame(prompt_win, bg=BG_COLOR)
+    ticket_frame.pack(fill="both", expand=True, padx=15, pady=10)
+
+    def render_ticket(passenger):
+        for w in ticket_frame.winfo_children():
+            w.destroy()
+
+        flight = next((f for f in db_utils.get_all_flights() if f['flight_id'] == passenger['flight_id']), None)
+        ticket_text = (
+            f"Passenger ID: {passenger['passenger_id']}\n"
+            f"Name: {passenger['name']}\n"
+            f"Flight ID: {passenger['flight_id']}\n"
+            f"Seat: {passenger['seat']}\n"
+            f"Checked In: {passenger.get('checked_in', 'No')}\n"
+            f"Baggage Weight: {passenger.get('baggage_weight', '0')} kg\n"
+            + (f"Airline: {flight['airline_id']}\nOrigin: {flight['origin']}\nDestination: {flight['destination']}\nDeparture: {flight['departure']}\nArrival: {flight['arrival']}\nStatus: {flight['status']}\n" if flight else "")
+        )
+
+        ticket_card = tk.Label(ticket_frame,
+                               text=ticket_text,
+                               justify="left",
+                               bg="white",
+                               fg="black",
+                               font=("Consolas", 10),
+                               bd=2,
+                               relief="solid",
+                               padx=10,
+                               pady=10)
+        ticket_card.pack(fill="both", expand=True)
+
+    def show_ticket():
+        pid = passenger_id_var.get().strip()
+        if not pid:
+            messagebox.showerror("Error", "Passenger ID is required.")
+            return
+        passenger = next((p for p in db_utils.get_all_passengers() if p['passenger_id'] == pid), None)
+        if not passenger:
+            messagebox.showerror("Not Found", f"No passenger found with ID {pid}.")
+            return
+        render_ticket(passenger)
+
+    tk.Button(prompt_win, text="Show Ticket", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"), command=show_ticket).pack(pady=10)
+
+    # Automatically display the ticket when a default passenger ID is provided (e.g. after booking)
+    if default_passenger_id:
+        show_ticket()
