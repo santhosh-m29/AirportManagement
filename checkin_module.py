@@ -98,8 +98,8 @@ def show_checkin_form(parent, switch_page, back_page, back_args):
             messagebox.showerror("Error", "Baggage weight must be a number!")
             return
         
-        if baggage > 23:
-            messagebox.showerror("Error", "Baggage weight exceeds 23kg limit!")
+        if baggage > 25:
+            messagebox.showerror("Error", "Baggage weight exceeds 25kg limit!")
             return
         
         # Find and update passenger
