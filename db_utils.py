@@ -93,6 +93,28 @@ def update_flight_status(flight_id, status):
                 flight['status'] = status
             writer.writerow(flight)
 
+def update_flight(flight_id, new_flight_id, airline_id, origin, destination, departure, arrival, gate, runway, status):
+    path = os.path.join(DB_PATH, "flights.csv")
+    flights = get_all_flights()
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=['flight_id', 'airline_id', 'origin', 'destination', 'departure', 'arrival', 'gate', 'runway', 'status'])
+        writer.writeheader()
+        for flight in flights:
+            if flight['flight_id'] == flight_id:
+                writer.writerow({'flight_id': new_flight_id, 'airline_id': airline_id, 'origin': origin, 'destination': destination, 'departure': departure, 'arrival': arrival, 'gate': gate, 'runway': runway, 'status': status})
+            else:
+                writer.writerow(flight)
+
+def delete_flight(flight_id):
+    path = os.path.join(DB_PATH, "flights.csv")
+    flights = get_all_flights()
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=['flight_id', 'airline_id', 'origin', 'destination', 'departure', 'arrival', 'gate', 'runway', 'status'])
+        writer.writeheader()
+        for flight in flights:
+            if flight['flight_id'] != flight_id:
+                writer.writerow(flight)
+
 def get_flights_by_airline(airline_id):
     flights = []
     all_flights = get_all_flights()
