@@ -50,7 +50,7 @@ def route_module(module_name):
 def show_home(parent, switch_page):
 
     tk.Label(parent,
-             text="✈ AIRPORT MANAGEMENT SYSTEM",
+             text="AIRPORT MANAGEMENT SYSTEM",
              font=("Segoe UI", 26, "bold"),
              fg="white",
              bg="#0f172a").pack(pady=60)
