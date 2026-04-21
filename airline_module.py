@@ -67,6 +67,10 @@ def show_airline_dashboard(parent, switch_page, back_page, back_args):
                   lambda: switch_page(show_airline_information, show_airline_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
+    create_option("Aircraft Information",
+                  lambda: switch_page(show_aircraft_information, show_airline_dashboard, (back_page, back_args))
+                  ).pack(pady=15)
+
     create_option("Pilot / Crew Data",
                   lambda: switch_page(show_crew_data, show_airline_dashboard, (back_page, back_args))
                   ).pack(pady=15)
@@ -520,6 +524,52 @@ def show_airline_information(parent, switch_page, back_page, back_args):
         tk.Label(card, text=f"{airline['name']}", font=("Segoe UI", 13, "bold"), fg=TEXT_COLOR, bg=CARD_COLOR).pack(anchor="w", padx=15, pady=10)
         tk.Label(card, text=f"ID: {airline['airline_id']} | Fleet Size: {airline['flights']} aircraft", 
                  font=("Segoe UI", 10), fg=SUB_TEXT, bg=CARD_COLOR).pack(anchor="w", padx=15, pady=5)
+
+# ===================== AIRCRAFT INFORMATION PAGE =====================
+def show_aircraft_information(parent, switch_page, back_page, back_args):
+    parent.configure(bg=BG_COLOR)
+    create_header(parent, switch_page, back_page, back_args)
+
+    tk.Label(parent,
+             text="Aircraft Information",
+             font=("Segoe UI", 22, "bold"),
+             fg=TEXT_COLOR,
+             bg=BG_COLOR).pack(pady=20)
+
+    # Get all flights
+    flights = db_utils.get_all_flights()
+
+    # Create a frame for the list
+    list_frame = tk.Frame(parent, bg=CARD_COLOR, width=1200, height=400)
+    list_frame.pack(padx=20, pady=10, fill="both", expand=True)
+    list_frame.pack_propagate(False)
+
+    # List header
+    header_frame = tk.Frame(list_frame, bg="#475569")
+    header_frame.pack(fill="x", padx=10, pady=10)
+    tk.Label(header_frame, text="Flight ID", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=10).pack(side="left")
+    tk.Label(header_frame, text="Airline", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
+    tk.Label(header_frame, text="Origin", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
+    tk.Label(header_frame, text="Destination", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
+    tk.Label(header_frame, text="Departure", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=10).pack(side="left")
+    tk.Label(header_frame, text="Arrival", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=10).pack(side="left")
+    tk.Label(header_frame, text="Gate", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=8).pack(side="left")
+    tk.Label(header_frame, text="Runway", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=8).pack(side="left")
+    tk.Label(header_frame, text="Status", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
+
+    # List items
+    for flight in flights:
+        row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
+        row_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(row_frame, text=flight['flight_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+        tk.Label(row_frame, text=flight['airline_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
+        tk.Label(row_frame, text=flight['origin'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
+        tk.Label(row_frame, text=flight['destination'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
+        tk.Label(row_frame, text=flight['departure'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+        tk.Label(row_frame, text=flight['arrival'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+        tk.Label(row_frame, text=flight['gate'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=8).pack(side="left")
+        tk.Label(row_frame, text=flight['runway'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=8).pack(side="left")
+        tk.Label(row_frame, text=flight['status'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
 
 # ===================== CREW DATA PAGE =====================
 def show_crew_data(parent, switch_page, back_page, back_args):
