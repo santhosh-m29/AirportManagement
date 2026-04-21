@@ -13,7 +13,6 @@ root.title("Airport Management System")
 root.geometry("1000x800")
 root.configure(bg="#0f172a")
 #root.resizable(False, False)
-
 main_container = tk.Frame(root, bg="#0f172a")
 main_container.pack(fill="both", expand=True)
 current_frame = None
