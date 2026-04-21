@@ -16,7 +16,6 @@ root.configure(bg="#0f172a")
 
 main_container = tk.Frame(root, bg="#0f172a")
 main_container.pack(fill="both", expand=True)
-
 current_frame = None
 
 # ===================== PAGE SWITCH FUNCTION =====================
@@ -45,10 +44,7 @@ def route_module(module_name):
     switch_page(module_routes[module_name], show_home, ())
 # ===================== HOME PAGE =====================
 
-
-
 def show_home(parent, switch_page):
-
     tk.Label(parent,
              text="✈ AIRPORT MANAGEMENT SYSTEM",
              font=("Segoe UI", 26, "bold"),
@@ -57,14 +53,12 @@ def show_home(parent, switch_page):
 
     button_frame = tk.Frame(parent, bg="#0f172a")
     button_frame.pack()
-
     modules = [
         ("MANAGE AIRLINES", "#2563eb"),
         ("TICKET COUNTER", "#16a34a"),
         ("ATC", "#d97706"),
         ("CHECKIN", "#db2777")
     ]
-
     for name, color in modules:
         tk.Button(button_frame,
                   text=name,
