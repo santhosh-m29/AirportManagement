@@ -12,6 +12,8 @@ root = tk.Tk()
 root.title("Airport Management System")
 root.geometry("1000x800")
 root.configure(bg="#0f172a")
+root.attributes("-fullscreen", True)
+root.bind("<Escape>", lambda event: root.attributes("-fullscreen", False))
 #root.resizable(False, False)
 
 main_container = tk.Frame(root, bg="#0f172a")
