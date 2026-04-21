@@ -1,11 +1,17 @@
 # main_app.py
 
+import os
 import tkinter as tk
 from auth_module import show_passkey_page
 import airline_module
 import ticket_module
 import atc_module
 import checkin_module
+
+try:
+    from tkVideoPlayer import TkinterVideo
+except ImportError:
+    TkinterVideo = None
 
 # ===================== MAIN WINDOW =====================
 root = tk.Tk()
@@ -30,6 +36,30 @@ def switch_page(page_function, *args):
     current_frame.pack(fill="both", expand=True)
 
     page_function(current_frame, switch_page, *args)
+
+# ===================== FADE-IN UTILITIES =====================
+VIDEO_PATH = os.path.join(os.path.dirname(__file__), "database", "Screen Recording 2026-04-21 101330.mp4")
+
+def fade_in_root(duration=500, steps=20):
+    try:
+        root.attributes("-alpha", 0.0)
+    except tk.TclError:
+        return
+
+    step_delay = max(1, int(duration / steps))
+    alpha_step = 1.0 / steps
+    current_alpha = 0.0
+
+    def step():
+        nonlocal current_alpha
+        current_alpha += alpha_step
+        if current_alpha >= 1.0:
+            root.attributes("-alpha", 1.0)
+            return
+        root.attributes("-alpha", current_alpha)
+        root.after(step_delay, step)
+
+    step()
 
 # ===================== MODULE ROUTER =====================
 def route_module(module_name):
@@ -77,6 +107,28 @@ def show_home(parent, switch_page):
                   command=lambda m=name: switch_page(show_passkey_page, m, route_module, show_home, ())
                   ).pack(pady=15)
 
+# ===================== SPLASH VIDEO =====================
+def show_splash(parent, switch_page):
+    if TkinterVideo is None:
+        tk.Label(parent,
+                 text="Video playback requires tkVideoPlayer.\nInstall with: pip install tkVideoPlayer",
+                 font=("Segoe UI", 16),
+                 fg="white",
+                 bg="#0f172a").pack(expand=True)
+        root.after(3000, lambda: switch_page(show_home))
+        return
+
+    video_player = TkinterVideo(master=parent, scaled=True, pre_load=False)
+    video_player.load(VIDEO_PATH)
+    video_player.pack(expand=True, fill="both")
+
+    def on_video_end(event=None):
+        switch_page(show_home)
+        fade_in_root()
+
+    video_player.bind("<<Ended>>", on_video_end)
+    video_player.play()
+
 # ===================== START =====================
-switch_page(show_home)
+switch_page(show_splash)
 root.mainloop()
