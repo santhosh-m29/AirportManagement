@@ -57,15 +57,13 @@ def show_airline_dashboard(parent, switch_page, back_page, back_args):
                   lambda: switch_page(show_edit_airlines, show_airline_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
-    create_option("Add Flights",
-                  lambda: switch_page(show_add_flights_form, show_airline_dashboard, (back_page, back_args))
-                  ).pack(pady=15)
+    # Removed 'Add Flights' from dashboard options
 
     create_option("Edit Flights",
                   lambda: switch_page(show_edit_flights, show_airline_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
-    create_option("Aircraft Information",
+    create_option("Airline Information",
                   lambda: switch_page(show_airline_information, show_airline_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
@@ -365,6 +363,10 @@ def show_edit_flights(parent, switch_page, back_page, back_args):
                   command=lambda fid=flight['flight_id']: switch_page(show_edit_flight_form, show_edit_flights, (back_page, back_args), fid)).pack(side="left", padx=5)
         tk.Button(action_frame, text="Delete", bg=BTN_DANGER, fg="white", relief="flat", width=6,
                   command=lambda fid=flight['flight_id']: delete_flight_action(fid, switch_page, show_edit_flights, (back_page, back_args))).pack(side="left", padx=5)
+
+    # Add Flights button at the bottom
+    tk.Button(parent, text="Add Flight", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
+              command=lambda: switch_page(show_add_flights_form, show_edit_flights, (back_page, back_args))).pack(pady=20)
 
 def delete_flight_action(flight_id, switch_page, current_page, back_args_tuple):
     if messagebox.askyesno("Confirm", "Are you sure you want to delete this flight?"):
