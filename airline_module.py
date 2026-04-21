@@ -505,7 +505,7 @@ def show_airline_information(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
     create_header(parent, switch_page, back_page, back_args)
 
-    tk.Label(parent, text="Aircraft Information", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
+    tk.Label(parent, text="Airline Information", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
     airlines = db_utils.get_all_airlines()
 
