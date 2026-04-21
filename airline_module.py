@@ -71,6 +71,10 @@ def show_airline_dashboard(parent, switch_page, back_page, back_args):
                   lambda: switch_page(show_aircraft_information, show_airline_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
+    create_option("Edit Crew",
+                  lambda: switch_page(show_edit_crew, show_airline_dashboard, (back_page, back_args))
+                  ).pack(pady=15)
+
     create_option("Pilot / Crew Data",
                   lambda: switch_page(show_crew_data, show_airline_dashboard, (back_page, back_args))
                   ).pack(pady=15)
@@ -594,6 +598,43 @@ def show_crew_data(parent, switch_page, back_page, back_args):
     tk.Label(header_frame, text="Role", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
     tk.Label(header_frame, text="Airline", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
 
+    # List items (scrollable)
+    for member in crew:
+        row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
+        row_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(row_frame, text=member['crew_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
+        tk.Label(row_frame, text=member['name'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
+        tk.Label(row_frame, text=member['role'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
+        tk.Label(row_frame, text=member['airline_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
+
+# ===================== EDIT CREW PAGE =====================
+def show_edit_crew(parent, switch_page, back_page, back_args):
+    parent.configure(bg=BG_COLOR)
+    create_header(parent, switch_page, back_page, back_args)
+
+    tk.Label(parent,
+             text="Edit Crew",
+             font=("Segoe UI", 22, "bold"),
+             fg=TEXT_COLOR,
+             bg=BG_COLOR).pack(pady=20)
+
+    # Get all crew
+    crew = db_utils.get_all_crew()
+
+    # Create a frame for the list
+    list_frame = tk.Frame(parent, bg=CARD_COLOR, width=1000, height=400)
+    list_frame.pack(padx=20, pady=10, fill="both", expand=True)
+    list_frame.pack_propagate(False)
+
+    # List header
+    header_frame = tk.Frame(list_frame, bg="#475569")
+    header_frame.pack(fill="x", padx=10, pady=10)
+    tk.Label(header_frame, text="Crew ID", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
+    tk.Label(header_frame, text="Name", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+    tk.Label(header_frame, text="Role", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
+    tk.Label(header_frame, text="Airline", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
+    tk.Label(header_frame, text="Actions", font=("Segoe UI", 11, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
+
     # List items
     for member in crew:
         row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
@@ -602,4 +643,155 @@ def show_crew_data(parent, switch_page, back_page, back_args):
         tk.Label(row_frame, text=member['name'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
         tk.Label(row_frame, text=member['role'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
         tk.Label(row_frame, text=member['airline_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
+        
+        action_frame = tk.Frame(row_frame, bg=CARD_COLOR)
+        action_frame.pack(side="left", fill="x", expand=True)
+        tk.Button(action_frame, text="Edit", bg=BTN_PRIMARY, fg="white", relief="flat", width=6,
+                  command=lambda cid=member['crew_id']: switch_page(show_edit_crew_form, show_edit_crew, (back_page, back_args), cid)).pack(side="left", padx=5)
+        tk.Button(action_frame, text="Delete", bg=BTN_DANGER, fg="white", relief="flat", width=6,
+                  command=lambda cid=member['crew_id']: delete_crew_action(cid, switch_page, show_edit_crew, (back_page, back_args))).pack(side="left", padx=5)
+
+    # Add Crew button at the bottom
+    tk.Button(parent, text="Add Crew", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
+              command=lambda: switch_page(show_add_crew_form, show_edit_crew, (back_page, back_args))).pack(pady=20)
+
+def delete_crew_action(crew_id, switch_page, current_page, back_args_tuple):
+    if messagebox.askyesno("Confirm", "Are you sure you want to delete this crew member?"):
+        crew = db_utils.get_all_crew()
+        filtered_crew = [c for c in crew if c['crew_id'] != crew_id]
+        path = "database/crew.csv"
+        import csv
+        with open(path, 'w', newline='') as f:
+            if filtered_crew:
+                writer = csv.DictWriter(f, fieldnames=filtered_crew[0].keys())
+                writer.writeheader()
+                writer.writerows(filtered_crew)
+            else:
+                f.write('crew_id,name,role,airline_id\n')
+        messagebox.showinfo("Success", "Crew member deleted successfully!")
+        switch_page(current_page, *back_args_tuple)
+
+def show_edit_crew_form(parent, switch_page, back_page, back_args, crew_id):
+    parent.configure(bg=BG_COLOR)
+    create_header(parent, switch_page, back_page, back_args)
+
+    crew = db_utils.get_all_crew()
+    member = next((c for c in crew if c['crew_id'] == crew_id), None)
+
+    if not member:
+        messagebox.showerror("Error", "Crew member not found!")
+        switch_page(show_edit_crew, back_page, back_args)
+        return
+
+    tk.Label(parent, text="Edit Crew Member", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
+
+    form_frame = tk.Frame(parent, bg=BG_COLOR)
+    form_frame.pack(pady=20)
+
+    tk.Label(form_frame, text="Crew ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w")
+    crew_id_var = tk.StringVar(value=member['crew_id'])
+    crew_id_entry = tk.Entry(form_frame, textvariable=crew_id_var, width=30, state="readonly")
+    crew_id_entry.pack(pady=5)
+
+    tk.Label(form_frame, text="Name:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    name_var = tk.StringVar(value=member['name'])
+    name_entry = tk.Entry(form_frame, textvariable=name_var, width=30)
+    name_entry.pack(pady=5)
+
+    tk.Label(form_frame, text="Role:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    roles = ["Captain", "Co-Pilot", "Flight Attendant", "Engineer", "Ground Staff"]
+    role_var = tk.StringVar(value=member['role'])
+    role_menu = tk.OptionMenu(form_frame, role_var, *roles)
+    role_menu.config(bg=CARD_COLOR, fg=TEXT_COLOR, font=("Segoe UI", 10), width=27)
+    role_menu.pack(pady=5)
+
+    tk.Label(form_frame, text="Airline:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    airlines = db_utils.get_all_airlines()
+    airline_options = [a['airline_id'] for a in airlines]
+    airline_var = tk.StringVar(value=member['airline_id'])
+    airline_menu = tk.OptionMenu(form_frame, airline_var, *airline_options)
+    airline_menu.config(bg=CARD_COLOR, fg=TEXT_COLOR, font=("Segoe UI", 10), width=27)
+    airline_menu.pack(pady=5)
+
+    def save_changes():
+        if not all([name_var.get(), role_var.get(), airline_var.get()]):
+            messagebox.showerror("Error", "All fields are required!")
+            return
+        
+        crew = db_utils.get_all_crew()
+        for c in crew:
+            if c['crew_id'] == crew_id:
+                c['name'] = name_var.get()
+                c['role'] = role_var.get()
+                c['airline_id'] = airline_var.get()
+        
+        path = "database/crew.csv"
+        import csv
+        with open(path, 'w', newline='') as f:
+            if crew:
+                writer = csv.DictWriter(f, fieldnames=crew[0].keys())
+                writer.writeheader()
+                writer.writerows(crew)
+        
+        messagebox.showinfo("Success", "Crew member updated successfully!")
+        switch_page(back_page, *back_args)
+
+    tk.Button(form_frame, text="Save Changes", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
+              command=save_changes).pack(pady=20)
+
+def show_add_crew_form(parent, switch_page, back_page, back_args):
+    parent.configure(bg=BG_COLOR)
+    create_header(parent, switch_page, back_page, back_args)
+
+    tk.Label(parent, text="Add New Crew Member", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
+
+    form_frame = tk.Frame(parent, bg=BG_COLOR)
+    form_frame.pack(pady=20)
+
+    # Auto-increment Crew ID
+    crew = db_utils.get_all_crew()
+    if crew:
+        last_id = crew[-1]['crew_id']
+        prefix = ''.join([c for c in last_id if not c.isdigit()])
+        num = int(''.join([c for c in last_id if c.isdigit()])) + 1
+        new_id = f"{prefix}{num:03d}"
+    else:
+        new_id = "CR001"
+    
+    tk.Label(form_frame, text="Crew ID:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w")
+    crew_id_var = tk.StringVar(value=new_id)
+    crew_id_entry = tk.Entry(form_frame, textvariable=crew_id_var, width=30, state="readonly")
+    crew_id_entry.pack(pady=5)
+
+    tk.Label(form_frame, text="Name:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    name_var = tk.StringVar()
+    name_entry = tk.Entry(form_frame, textvariable=name_var, width=30)
+    name_entry.pack(pady=5)
+    name_entry.bind("<Return>", lambda e: add_crew())
+
+    tk.Label(form_frame, text="Role:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    roles = ["Captain", "Co-Pilot", "Flight Attendant", "Engineer", "Ground Staff"]
+    role_var = tk.StringVar(value="Captain")
+    role_menu = tk.OptionMenu(form_frame, role_var, *roles)
+    role_menu.config(bg=CARD_COLOR, fg=TEXT_COLOR, font=("Segoe UI", 10), width=27)
+    role_menu.pack(pady=5)
+
+    tk.Label(form_frame, text="Airline:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 0))
+    airlines = db_utils.get_all_airlines()
+    airline_options = [a['airline_id'] for a in airlines]
+    airline_var = tk.StringVar(value=airline_options[0] if airline_options else "")
+    airline_menu = tk.OptionMenu(form_frame, airline_var, *airline_options)
+    airline_menu.config(bg=CARD_COLOR, fg=TEXT_COLOR, font=("Segoe UI", 10), width=27)
+    airline_menu.pack(pady=5)
+
+    def add_crew():
+        if not name_var.get():
+            messagebox.showerror("Error", "All fields are required!")
+            return
+        db_utils.add_crew(crew_id_var.get(), name_var.get(), role_var.get(), airline_var.get())
+        messagebox.showinfo("Success", "Crew member added successfully!")
+        switch_page(back_page, *back_args)
+
+    tk.Button(form_frame, text="Add Crew", bg=BTN_SUCCESS, fg="white", relief="flat", font=("Segoe UI", 11, "bold"),
+              command=add_crew).pack(pady=20)
 
