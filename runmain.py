@@ -23,8 +23,8 @@ def play_video(video_path):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Initialize Pygame screen
-    screen = pygame.display.set_mode((width, height))
+    # Initialize Pygame screen in fullscreen and scale it to fit the monitor
+    screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN | pygame.SCALED)
     pygame.display.set_caption("Intro Video")
     clock = pygame.time.Clock()
     
