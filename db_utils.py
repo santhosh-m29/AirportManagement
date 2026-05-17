@@ -67,59 +67,197 @@ def get_crew_by_airline(airline_id):
     return crew
 
 # ===================== FLIGHTS =====================
+FLIGHT_FIELDS = ['flight_id', 'airline', 'origin', 'destination', 'departure_time', 'arrival_time', 'status', 'gate', 'runway']
+
+
+def _normalize_flight_row(row):
+    airline = row.get('airline') or row.get('airline_id', '')
+    departure = row.get('departure_time') or row.get('departure', '')
+    arrival = row.get('arrival_time') or row.get('arrival', '')
+
+    normalized = {
+        'flight_id': row.get('flight_id', ''),
+        'airline': airline,
+        'airline_id': airline,
+        'origin': row.get('origin', ''),
+        'destination': row.get('destination', ''),
+        'departure_time': departure,
+        'departure': departure,
+        'arrival_time': arrival,
+        'arrival': arrival,
+        'status': row.get('status', ''),
+        'gate': row.get('gate', ''),
+        'runway': row.get('runway', '')
+    }
+    return normalized
+
+
 def get_all_flights():
     flights = []
     path = os.path.join(DB_PATH, "flights.csv")
     with open(path, 'r', newline='') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            flights.append(row)
+            flights.append(_normalize_flight_row(row))
     return flights
+
 
 def add_flight(flight_id, airline_id, origin, destination, departure, arrival, gate, runway):
     path = os.path.join(DB_PATH, "flights.csv")
     with open(path, 'a', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow([flight_id, airline_id, origin, destination, departure, arrival, gate, runway, "On Schedule"])
+        writer.writerow([flight_id, airline_id, origin, destination, departure, arrival, "SCHEDULED", gate, runway])
+
 
 def update_flight_status(flight_id, status):
     path = os.path.join(DB_PATH, "flights.csv")
     flights = get_all_flights()
     with open(path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['flight_id', 'airline_id', 'origin', 'destination', 'departure', 'arrival', 'gate', 'runway', 'status'])
+        writer = csv.DictWriter(f, fieldnames=FLIGHT_FIELDS)
         writer.writeheader()
         for flight in flights:
             if flight['flight_id'] == flight_id:
                 flight['status'] = status
-            writer.writerow(flight)
+            writer.writerow({
+                'flight_id': flight['flight_id'],
+                'airline': flight.get('airline', flight.get('airline_id', '')),
+                'origin': flight.get('origin', ''),
+                'destination': flight.get('destination', ''),
+                'departure_time': flight.get('departure_time', ''),
+                'arrival_time': flight.get('arrival_time', ''),
+                'status': flight.get('status', ''),
+                'gate': flight.get('gate', ''),
+                'runway': flight.get('runway', '')
+            })
+
+
+def reschedule_flight(flight_id, departure_time, arrival_time, status=None):
+    path = os.path.join(DB_PATH, "flights.csv")
+    flights = get_all_flights()
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=FLIGHT_FIELDS)
+        writer.writeheader()
+        for flight in flights:
+            if flight['flight_id'] == flight_id:
+                writer.writerow({
+                    'flight_id': flight['flight_id'],
+                    'airline': flight.get('airline', flight.get('airline_id', '')),
+                    'origin': flight.get('origin', ''),
+                    'destination': flight.get('destination', ''),
+                    'departure_time': departure_time,
+                    'arrival_time': arrival_time,
+                    'status': status if status is not None else flight.get('status', ''),
+                    'gate': flight.get('gate', ''),
+                    'runway': flight.get('runway', '')
+                })
+            else:
+                writer.writerow({
+                    'flight_id': flight['flight_id'],
+                    'airline': flight.get('airline', flight.get('airline_id', '')),
+                    'origin': flight.get('origin', ''),
+                    'destination': flight.get('destination', ''),
+                    'departure_time': flight.get('departure_time', ''),
+                    'arrival_time': flight.get('arrival_time', ''),
+                    'status': flight.get('status', ''),
+                    'gate': flight.get('gate', ''),
+                    'runway': flight.get('runway', '')
+                })
+
+
+def update_flight_fields(flight_id, **fields):
+    path = os.path.join(DB_PATH, "flights.csv")
+    flights = get_all_flights()
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=FLIGHT_FIELDS)
+        writer.writeheader()
+        for flight in flights:
+            if flight['flight_id'] == flight_id:
+                updated = {
+                    'flight_id': flight['flight_id'],
+                    'airline': flight.get('airline', flight.get('airline_id', '')),
+                    'origin': flight.get('origin', ''),
+                    'destination': flight.get('destination', ''),
+                    'departure_time': flight.get('departure_time', ''),
+                    'arrival_time': flight.get('arrival_time', ''),
+                    'status': flight.get('status', ''),
+                    'gate': flight.get('gate', ''),
+                    'runway': flight.get('runway', '')
+                }
+                updated.update(fields)
+                writer.writerow(updated)
+            else:
+                writer.writerow({
+                    'flight_id': flight['flight_id'],
+                    'airline': flight.get('airline', flight.get('airline_id', '')),
+                    'origin': flight.get('origin', ''),
+                    'destination': flight.get('destination', ''),
+                    'departure_time': flight.get('departure_time', ''),
+                    'arrival_time': flight.get('arrival_time', ''),
+                    'status': flight.get('status', ''),
+                    'gate': flight.get('gate', ''),
+                    'runway': flight.get('runway', '')
+                })
+
 
 def update_flight(flight_id, new_flight_id, airline_id, origin, destination, departure, arrival, gate, runway, status):
     path = os.path.join(DB_PATH, "flights.csv")
     flights = get_all_flights()
     with open(path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['flight_id', 'airline_id', 'origin', 'destination', 'departure', 'arrival', 'gate', 'runway', 'status'])
+        writer = csv.DictWriter(f, fieldnames=FLIGHT_FIELDS)
         writer.writeheader()
         for flight in flights:
             if flight['flight_id'] == flight_id:
-                writer.writerow({'flight_id': new_flight_id, 'airline_id': airline_id, 'origin': origin, 'destination': destination, 'departure': departure, 'arrival': arrival, 'gate': gate, 'runway': runway, 'status': status})
+                writer.writerow({
+                    'flight_id': new_flight_id,
+                    'airline': airline_id,
+                    'origin': origin,
+                    'destination': destination,
+                    'departure_time': departure,
+                    'arrival_time': arrival,
+                    'status': status,
+                    'gate': gate,
+                    'runway': runway
+                })
             else:
-                writer.writerow(flight)
+                writer.writerow({
+                    'flight_id': flight['flight_id'],
+                    'airline': flight.get('airline', flight.get('airline_id', '')),
+                    'origin': flight.get('origin', ''),
+                    'destination': flight.get('destination', ''),
+                    'departure_time': flight.get('departure_time', ''),
+                    'arrival_time': flight.get('arrival_time', ''),
+                    'status': flight.get('status', ''),
+                    'gate': flight.get('gate', ''),
+                    'runway': flight.get('runway', '')
+                })
+
 
 def delete_flight(flight_id):
     path = os.path.join(DB_PATH, "flights.csv")
     flights = get_all_flights()
     with open(path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['flight_id', 'airline_id', 'origin', 'destination', 'departure', 'arrival', 'gate', 'runway', 'status'])
+        writer = csv.DictWriter(f, fieldnames=FLIGHT_FIELDS)
         writer.writeheader()
         for flight in flights:
             if flight['flight_id'] != flight_id:
-                writer.writerow(flight)
+                writer.writerow({
+                    'flight_id': flight['flight_id'],
+                    'airline': flight.get('airline', flight.get('airline_id', '')),
+                    'origin': flight.get('origin', ''),
+                    'destination': flight.get('destination', ''),
+                    'departure_time': flight.get('departure_time', ''),
+                    'arrival_time': flight.get('arrival_time', ''),
+                    'status': flight.get('status', ''),
+                    'gate': flight.get('gate', ''),
+                    'runway': flight.get('runway', '')
+                })
+
 
 def get_flights_by_airline(airline_id):
     flights = []
     all_flights = get_all_flights()
     for flight in all_flights:
-        if flight.get('airline_id') == airline_id:
+        if flight.get('airline_id') == airline_id or flight.get('airline') == airline_id:
             flights.append(flight)
     return flights
 
@@ -224,3 +362,49 @@ def update_gate_status(gate_id, status):
             if gate['gate_id'] == gate_id:
                 gate['status'] = status
             writer.writerow(gate)
+
+
+def reset_simulation_data():
+    # Reset all flights to scheduled state
+    flights = get_all_flights()
+    flight_path = os.path.join(DB_PATH, "flights.csv")
+    with open(flight_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=FLIGHT_FIELDS)
+        writer.writeheader()
+        for flight in flights:
+            writer.writerow({
+                'flight_id': flight['flight_id'],
+                'airline': flight.get('airline', flight.get('airline_id', '')),
+                'origin': flight.get('origin', ''),
+                'destination': flight.get('destination', ''),
+                'departure_time': flight.get('departure_time', ''),
+                'arrival_time': flight.get('arrival_time', ''),
+                'status': 'SCHEDULED',
+                'gate': flight.get('gate', ''),
+                'runway': flight.get('runway', '')
+            })
+
+    # Reset all gate and runway statuses to available
+    gate_path = os.path.join(DB_PATH, "gates.csv")
+    gates = get_all_gates()
+    with open(gate_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=['gate_id', 'terminal', 'status'])
+        writer.writeheader()
+        for gate in gates:
+            writer.writerow({
+                'gate_id': gate['gate_id'],
+                'terminal': gate['terminal'],
+                'status': 'AVAILABLE'
+            })
+
+    runway_path = os.path.join(DB_PATH, "runways.csv")
+    runways = get_all_runways()
+    with open(runway_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=['runway_id', 'length', 'status'])
+        writer.writeheader()
+        for runway in runways:
+            writer.writerow({
+                'runway_id': runway['runway_id'],
+                'length': runway.get('length', ''),
+                'status': 'AVAILABLE'
+            })

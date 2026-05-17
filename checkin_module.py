@@ -19,14 +19,9 @@ def create_header(parent, switch_page, back_page, back_args):
     header = tk.Frame(parent, bg=BG_COLOR)
     header.pack(fill="x", pady=10)
 
-    tk.Button(header,
-              text="Back",
-              bg=BTN_DANGER,
-              fg="white",
-              font=("Segoe UI", 10, "bold"),
-              relief="flat",
-              command=lambda: switch_page(back_page, *back_args)
-              ).pack(side="left", padx=20)
+    root = parent.winfo_toplevel()
+    if back_page:
+        root.set_nav_button("Back", lambda: switch_page(back_page, *back_args))
 
 # ===================== MAIN DASHBOARD =====================
 def show_checkin_dashboard(parent, switch_page, back_page, back_args):
@@ -126,29 +121,42 @@ def show_baggage_info(parent, switch_page, back_page, back_args):
 
     passengers = db_utils.get_all_passengers()
 
-    # Create a frame for the list
-    list_frame = tk.Frame(parent, bg=CARD_COLOR, width=900, height=380)
-    list_frame.pack(padx=20, pady=10, fill="both", expand=True)
-    list_frame.pack_propagate(False)
+    # Create a frame for the list (scrollable)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=380)
+    container.pack(padx=20, pady=10, fill="both", expand=True)
+    container.pack_propagate(False)
+
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=380)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    list_frame = tk.Frame(canvas, bg=CARD_COLOR)
+    canvas.create_window((0, 0), window=list_frame, anchor="nw")
+
+    def on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    list_frame.bind("<Configure>", on_frame_configure)
 
     # List header
     header_frame = tk.Frame(list_frame, bg="#475569")
     header_frame.pack(fill="x", padx=10, pady=10)
-    tk.Label(header_frame, text="Passenger ID", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
-    tk.Label(header_frame, text="Name", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
-    tk.Label(header_frame, text="Baggage (kg)", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
-    tk.Label(header_frame, text="Status", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
+    tk.Label(header_frame, text="Passenger ID", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+    tk.Label(header_frame, text="Name", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+    tk.Label(header_frame, text="Baggage (kg)", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=18).pack(side="left")
+    tk.Label(header_frame, text="Status", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=18).pack(side="left")
 
     # List items
     for passenger in passengers:
         row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
         row_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(row_frame, text=passenger['passenger_id'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
-        tk.Label(row_frame, text=passenger['name'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
-        tk.Label(row_frame, text=passenger['baggage_weight'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
+        tk.Label(row_frame, text=passenger['passenger_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
+        tk.Label(row_frame, text=passenger['name'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
+        tk.Label(row_frame, text=passenger['baggage_weight'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=18).pack(side="left")
         
         status_color = "#22c55e" if passenger['checked_in'] == "Yes" else "#ef4444"
-        tk.Label(row_frame, text=passenger['checked_in'], font=("Segoe UI", 9), fg=status_color, bg=CARD_COLOR, width=12).pack(side="left")
+        tk.Label(row_frame, text=passenger['checked_in'], font=("Segoe UI", 10), fg=status_color, bg=CARD_COLOR, width=18).pack(side="left")
 
 # ===================== CHECKED-IN PASSENGERS PAGE =====================
 def show_checkedin_passengers(parent, switch_page, back_page, back_args):
@@ -160,10 +168,23 @@ def show_checkedin_passengers(parent, switch_page, back_page, back_args):
     passengers = db_utils.get_all_passengers()
     checkedin = [p for p in passengers if p['checked_in'] == "Yes"]
 
-    # Create a frame for the list
-    list_frame = tk.Frame(parent, bg=CARD_COLOR, width=900, height=350)
-    list_frame.pack(padx=20, pady=10, fill="both", expand=True)
-    list_frame.pack_propagate(False)
+    # Create a frame for the list (scrollable)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=350)
+    container.pack(padx=20, pady=10, fill="both", expand=True)
+    container.pack_propagate(False)
+
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=350)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    list_frame = tk.Frame(canvas, bg=CARD_COLOR)
+    canvas.create_window((0, 0), window=list_frame, anchor="nw")
+
+    def on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    list_frame.bind("<Configure>", on_frame_configure)
 
     if not checkedin:
         tk.Label(list_frame, text="No passengers checked in yet.", font=("Segoe UI", 12), fg=SUB_TEXT, bg=CARD_COLOR).pack(pady=150)
@@ -171,18 +192,18 @@ def show_checkedin_passengers(parent, switch_page, back_page, back_args):
         # List header
         header_frame = tk.Frame(list_frame, bg="#475569")
         header_frame.pack(fill="x", padx=10, pady=10)
-        tk.Label(header_frame, text="Passenger ID", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
-        tk.Label(header_frame, text="Name", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
-        tk.Label(header_frame, text="Flight ID", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=12).pack(side="left")
-        tk.Label(header_frame, text="Seat", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=10).pack(side="left")
-        tk.Label(header_frame, text="Baggage", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=10).pack(side="left")
+        tk.Label(header_frame, text="Passenger ID", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+        tk.Label(header_frame, text="Name", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+        tk.Label(header_frame, text="Flight ID", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=18).pack(side="left")
+        tk.Label(header_frame, text="Seat", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
+        tk.Label(header_frame, text="Baggage", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
 
         # List items
         for passenger in checkedin:
             row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
             row_frame.pack(fill="x", padx=10, pady=5)
-            tk.Label(row_frame, text=passenger['passenger_id'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
-            tk.Label(row_frame, text=passenger['name'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
-            tk.Label(row_frame, text=passenger['flight_id'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
-            tk.Label(row_frame, text=passenger['seat'], font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
-            tk.Label(row_frame, text=f"{passenger['baggage_weight']}kg", font=("Segoe UI", 9), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+            tk.Label(row_frame, text=passenger['passenger_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
+            tk.Label(row_frame, text=passenger['name'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
+            tk.Label(row_frame, text=passenger['flight_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=18).pack(side="left")
+            tk.Label(row_frame, text=passenger['seat'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
+            tk.Label(row_frame, text=f"{passenger['baggage_weight']}kg", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")

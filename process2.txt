@@ -1,0 +1,110 @@
+Airport Management System - Current Project Status
+
+Database: CSV files stored in the `database/` folder.
+FrontEnd: Tkinter GUI inside a single main application window.
+
+Current Modules and Responsibilities:
+
+1. main.py
+   - Creates the single Tk root window and `main_container` frame.
+   - Defines `switch_page(parent_function, *args)` to destroy the current frame and render the next page in the same window.
+   - Implements `route_module(module_name)` to connect home menu buttons to module dashboards.
+   - Builds `show_home(parent, switch_page)` as the initial menu with buttons for:
+     - MANAGE AIRLINES
+     - TICKET COUNTER
+     - ATC
+     - CHECKIN
+   - Starts the app by calling `switch_page(show_home)` and `root.mainloop()`.
+
+2. auth_module.py
+   - Defines passkey page behavior with `show_passkey_page(parent, switch_page, module_name, route_callback, back_page, back_args)`.
+   - Uses in-memory `PASSKEYS` mapping for each module:
+     - MANAGE AIRLINES -> air123
+     - TICKET COUNTER -> ticket123
+     - ATC -> atc123
+     - CHECKIN -> check123
+   - Verifies passkey and routes to the requested module dashboard.
+   - Provides `create_header()` with a Home button for navigation.
+
+3. db_utils.py
+   - Central CSV database utility layer.
+   - Supports airlines, crew, flights, passengers, runways, gates.
+   - Functions include:
+     - get_all_airlines, add_airline, update_airline, delete_airline
+     - get_all_crew, add_crew, get_crew_by_airline
+     - get_all_flights, add_flight, update_flight_status, update_flight, delete_flight, get_flights_by_airline
+     - get_all_passengers, add_passenger, update_passenger_checkin, get_passengers_by_flight
+     - get_all_runways, add_runway, update_runway_status
+     - get_all_gates, add_gate, update_gate_status
+
+4. airline_module.py
+   - Page functions:
+     - show_airline_dashboard()
+     - show_edit_airlines()
+     - show_edit_airline_form()
+     - show_add_airline_form()
+     - show_add_flights_form()
+   - Helper functions:
+     - create_header()
+     - delete_airline_action()
+   - Uses `db_utils` to read/add/update/delete airline records.
+
+5. ticket_module.py
+   - Page functions:
+     - show_ticket_dashboard()
+     - show_flights_list()
+     - show_booking_form()
+     - show_bookings_list()
+     - show_print_ticket_prompt()
+   - Uses `db_utils` to list flights, add passengers, and display ticket information.
+   - Supports booking workflow including route search and ticket printing prompt.
+
+6. atc_module.py
+   - Page functions:
+     - show_atc_dashboard()
+     - show_gate_management()
+     - show_runway_management()
+     - show_flight_schedule()
+     - show_flight_status()
+   - Helper functions:
+     - create_header()
+     - update_gate_status()
+     - update_runway_status()
+     - update_flight_status()
+   - Uses `db_utils` to monitor and update gate/runway availability and flight statuses.
+
+7. checkin_module.py
+   - Page functions:
+     - show_checkin_dashboard()
+     - show_checkin_form()
+     - show_baggage_info()
+     - show_checkedin_passengers()
+   - Uses `db_utils` to validate passenger check-in and baggage weight, update passenger records, and display check-in status.
+
+8. runmain.py
+   - Plays an intro video using `pygame` and `cv2` if available.
+   - Imports `main` after the intro video completes.
+
+Integration and Single Main Window Approach:
+
+- `main.py` builds a single `tk.Tk()` root window and a `main_container` frame.
+- The `switch_page()` function reuses `main_container` by destroying the current child frame and packing a new one.
+- All module screens are implemented as functions that accept `parent` and `switch_page`, so they render into the same container.
+- Navigation always returns to the same main window, avoiding multiple root windows.
+- `auth_module.show_passkey_page()` sits between home and each module to enforce passkey verification.
+- Dashboard pages use back navigation by passing `back_page` and `back_args` into the `switch_page()` calls.
+
+Current Real Behavior:
+
+- App opens into the home menu with 4 main options.
+- Selecting an option opens a passkey screen.
+- Correct passkey loads the chosen module dashboard.
+- Each page is a Tkinter `Frame` inside the same window; only the print ticket prompt creates a secondary `Toplevel` window.
+- Data storage is CSV-based and managed through `db_utils`.
+
+Notes on Project Status:
+
+- The current implementation is already structured around a single main window.
+- Module navigation is dynamic through `switch_page()`.
+- Some module capabilities, such as flight addition in `airline_module.py`, are partly implemented but not fully exposed in the current dashboard.
+- The system is ready for further UI polish and adding missing CRUD actions as needed.

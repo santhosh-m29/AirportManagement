@@ -20,14 +20,9 @@ def create_header(parent, switch_page, back_page, back_args):
     header = tk.Frame(parent, bg=BG_COLOR)
     header.pack(fill="x", pady=10)
 
-    # HOME BUTTON (Top Left)
-    tk.Button(header,
-              text="Home",
-              bg=BTN_SECONDARY,
-              fg="white",
-              relief="flat",
-              command=lambda: switch_page(back_page, *back_args)
-              ).pack(side="left", padx=20)
+    root = parent.winfo_toplevel()
+    if back_page:
+        root.set_nav_button("Home", lambda: switch_page(back_page, *back_args))
 
 def show_passkey_page(parent, switch_page, module_name, route_callback, back_page, back_args):
     parent.configure(bg=BG_COLOR)
