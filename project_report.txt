@@ -1,0 +1,349 @@
+================================================================================
+                       AIRPORT MANAGEMENT SYSTEM (AMS)
+                               PROJECT REPORT
+================================================================================
+
+1. SYSTEM OVERVIEW
+--------------------------------------------------------------------------------
+The Airport Management System (AMS) is a high-fidelity, desktop-based management
+and simulation application built in Python using the Tkinter graphical user 
+interface framework. The application provides airport operators, airline staff, 
+and passengers with an integrated interface to manage flights, schedules, crew 
+members, ticketing, passenger check-ins, gates, and runways.
+
+A key feature of the application is a real-time/accelerated virtual time clock 
+and event-scheduling engine, which drives automated flights status transitions 
+(e.g., from SCHEDULED, to CHECK-IN OPEN, BOARDING, GATE CLOSED, TAXIING, 
+DEPARTED, IN AIR, and ARRIVED) and simulates randomized delays and automatic 
+gate/runway resource assignments in the background.
+
+The system is designed with a premium, sleek dark-themed GUI and leverages a 
+single-window architecture where pages are dynamically swapped out to provide a 
+seamless, application-like user experience.
+
+--------------------------------------------------------------------------------
+2. SYSTEM ARCHITECTURE
+--------------------------------------------------------------------------------
+The AMS program architecture is split into five core layers:
+
++------------------------------------------------------------------------------+
+|                           GUI & NAVIGATION LAYER                             |
+|       (main.py, auth_module.py, modules dashboards, runmain.py video)        |
++------------------------------------------------------------------------------+
+                                       |
+                                       v
++------------------------------------------------------------------------------+
+|                         SIMULATION & STATUS ENGINE                           |
+|                    (simulation_engine.py, scheduler.py)                      |
++------------------------------------------------------------------------------+
+                                       |
+                                       v
++------------------------------------------------------------------------------+
+|                       DATABASE & DATA UTILITY LAYER                          |
+|                              (db_utils.py)                                   |
++------------------------------------------------------------------------------+
+                                       |
+                                       v
++------------------------------------------------------------------------------+
+|                           CSV FILE DATABASE LAYER                            |
+|        (airlines, crew, flights, passengers, runways, gates CSV files)       |
++------------------------------------------------------------------------------+
+
+A. Single-Window GUI Architecture:
+   - Root Window: Initialized as `root` in `main.py` using `tk.Tk()`. It has 
+     attributes configured for borderless fullscreen, custom mouse-wheel 
+     scrolling across frames, and a global clock refresh.
+   - Dynamic Navigation: Swapping pages is performed by `switch_page()`. It 
+     destroys the existing page frame (`current_frame`) packed inside the main 
+     canvas, builds a fresh `tk.Frame`, and invokes the new screen's rendering 
+     function. This approach maintains a single, persistent Tkinter event 
+     loop, resolving memory leaks and preventing multiple window pop-ups.
+   - Authentication Layer: Dashboard entry buttons are routed through 
+     `auth_module.show_passkey_page()`. A user must enter a unique passkey for 
+     each desk to proceed.
+
+B. Background Flight Simulation & Disruption Engine:
+   - Time Management: Managed by `simulation_engine.py`. A virtual datetime 
+     object progresses by a configurable `TIME_SPEED` (e.g., 1 real second = 
+     5 virtual minutes) on every tick.
+   - Event Loop: Driven using the Tkinter event queue via `root.after(1000, ...)`.
+   - Flight Status Lifecycle: Flights are automatically updated relative to their 
+     scheduled departure and arrival times:
+     - CHECK-IN OPEN (Departure - 120 mins): Gate is occupied (`OCCUPIED`).
+     - BOARDING (Departure - 30 mins): Passenger boarding process.
+     - GATE CLOSED (Departure - 10 mins): Gate is closed.
+     - TAXIING (Departure - 5 mins): Runway is occupied (`OCCUPIED`) and the 
+       gate is released (`AVAILABLE`).
+     - DEPARTED (At Departure time): Flight leaves the airport.
+     - IN AIR (Between Departure and Arrival): Flight is flying to destination.
+     - ARRIVED (At Arrival time): Flight lands; runway and remaining resources 
+       are updated.
+   - Disruption Engine: During "CHECK-IN OPEN" or "BOARDING", the scheduler 
+     has a randomized 10% chance to set a flight's status to "DELAYED", 
+     rescheduling departure and arrival times by 15 minutes.
+
+C. Data Layer:
+   - The backend uses flat CSV files located inside the `/database` directory.
+   - `db_utils.py` contains atomic CSV reading/writing handlers to prevent 
+     file corruption. It exposes CRUD utilities for all system records.
+
+--------------------------------------------------------------------------------
+3. MODULE-BY-MODULE EXPLANATION
+--------------------------------------------------------------------------------
+
+----------------------------------------
+A. main.py
+----------------------------------------
+The central entry point of the graphical user interface. It establishes the global 
+window layout, configures premium design variables, controls the navigation bar, 
+runs the simulation loop, and serves as the primary router.
+
+Premium Theme Palette:
+  - Background (BG_COLOR): `#0b0f19` (Dark Navy Blue)
+  - Card Fill (CARD_COLOR): `#151f32` (Sleek Slate)
+  - Border Outline (BORDER_COLOR): `#243249` (Steel Blue)
+  - Accent Color: `#4f46e5` (Royal Purple Indigo)
+  - Success Green: `#10b981` | Danger Red: `#f43f5e`
+
+Functions Implemented:
+  - `add_hover(widget, hover_bg, normal_bg, hover_fg=None, normal_fg=None)`:
+    Binds hover event handlers (`<Enter>`, `<Leave>`) to elements for interactive
+    micro-animations.
+  - `set_nav_button(text, command)`: Configures the global top bar back-navigation
+    button with specific commands and labels.
+  - `clear_nav_button()`: Hides the top navigation button when returning to the home menu.
+  - `refresh_clock()`: Automatically runs every 1000 milliseconds to fetch and
+    format the latest virtual simulation clock from the engine.
+  - `on_scrollable_configure(event)` / `on_canvas_configure(event)`: Ensures the
+    global canvas scrolling viewport dynamic resizes with window geometry changes.
+  - `on_mousewheel(event)`: Handles mouse wheel events on Windows and UNIX platforms,
+    offering custom smooth vertical canvas scroll.
+  - `switch_page(page_function, *args)`: Dynamically swaps the active dashboard.
+    Destroys the current window content and calls the requested page renderer.
+  - `route_module(module_name)`: Acts as the primary router after passkey
+    verification, redirecting to the matching desk dashboard page.
+  - `show_settings()`: Spawns a modal window allowing operators to adjust the 
+    simulated time, alter the time speed multiplier, or reset the entire CSV 
+    database.
+  - `show_home(parent, switch_page)`: Builds the main landing screen featuring a
+    2x2 high-fidelity card menu representing: Manage Airlines, Ticket Counter,
+    ATC Operations, and Checked-In Desk.
+
+----------------------------------------
+B. runmain.py
+----------------------------------------
+The intro module responsible for loading screen video playback.
+Functions Implemented:
+  - `play_video(video_path)`: Uses Pygame and OpenCV (`cv2`) to open the intro video
+    located at `./assets/finalappintro.mp4`, scale it to fullscreen, play it with 
+    native FPS, and allow user skip-actions (Escape or Enter keys). After playback 
+    finishes, it imports `main.py` to start the GUI.
+
+----------------------------------------
+C. auth_module.py
+----------------------------------------
+Secures module access by introducing a modular password verification gate.
+Functions Implemented:
+  - `create_header(parent, switch_page, back_page, back_args)`: Constructs header
+    links and assigns a back nav callback.
+  - `show_passkey_page(parent, switch_page, module_name, route_callback, back_page, back_args)`:
+    Renders a premium access-card form asking for the module's passkey. Binds key-press 
+    `<Return>` and button clicks to verify inputs.
+    Passkey Constants:
+      - MANAGE AIRLINES -> "air123"
+      - TICKET COUNTER -> "ticket123"
+      - ATC -> "atc123"
+      - CHECKIN -> "check123"
+
+----------------------------------------
+D. db_utils.py
+----------------------------------------
+The persistence layer of the system. Reads and updates structured data in the CSV tables.
+Functions Implemented:
+  - `get_all_airlines()`: Loads all airline lines into memory as a list of dicts.
+  - `add_airline(airline_id, name, flights)`: Appends an airline record to the CSV.
+  - `update_airline(airline_id, name, flights)`: Edits an existing airline entry.
+  - `delete_airline(airline_id)`: Removes an airline from the CSV database.
+  - `get_all_crew()`: Retrieves the full roster of airline crew members.
+  - `add_crew(crew_id, name, role, airline_id)`: Appends a crew member record.
+  - `get_crew_by_airline(airline_id)`: Filters crew members belonging to an airline.
+  - `_normalize_flight_row(row)`: Ensures structural safety across flight entries by 
+    validating aliases for fields like departures, arrivals, and airlines.
+  - `get_all_flights()`: Returns all flights parsed into normalized objects.
+  - `add_flight(flight_id, airline_id, origin, destination, departure, arrival, gate, runway)`:
+    Appends a new flight entry with status set as "SCHEDULED".
+  - `update_flight_status(flight_id, status)`: Updates only a flight's status field.
+  - `reschedule_flight(flight_id, departure_time, arrival_time, status=None)`:
+    Overwrites arrival, departure, and status fields (used heavily in the delay loop).
+  - `update_flight_fields(flight_id, **fields)`: Performs a selective column update 
+    on a target flight record using key-value overrides.
+  - `update_flight(flight_id, new_flight_id, airline_id, origin, destination, departure, arrival, gate, runway, status)`:
+    Performs full column modification for a flight record.
+  - `delete_flight(flight_id)`: Drops a flight row from the flights CSV database.
+  - `get_flights_by_airline(airline_id)`: Filters flight rows for a specific airline.
+  - `get_all_passengers()`: Loads all passenger data from passenger CSV.
+  - `add_passenger(passenger_id, name, flight_id, seat, checked_in, baggage_weight)`:
+    Registers a booking entry with default status flags.
+  - `update_passenger_checkin(passenger_id, checked_in, baggage_weight)`:
+    Updates a passenger's checked-in status and baggage weight during check-in.
+  - `get_passengers_by_flight(flight_id)`: Filters passengers bound to a flight.
+  - `get_all_runways()`: Retrieves runway rows.
+  - `add_runway(runway_id, length, status)`: Appends a runway entry to the runway CSV.
+  - `update_runway_status(runway_id, status)`: Edits a runway's availability status.
+  - `get_all_gates()`: Loads gate rows.
+  - `add_gate(gate_id, terminal, status)`: Adds a gate entry to the gate CSV.
+  - `update_gate_status(gate_id, status)`: Edits a gate's availability status.
+  - `reset_simulation_data()`: Re-initializes all flight records to "SCHEDULED" and 
+    restores all gates and runways back to "AVAILABLE" (used in simulation resetting).
+
+----------------------------------------
+E. airline_module.py
+----------------------------------------
+Provides screens to view and manage fleet operations, airline details, and crew assignments.
+Functions Implemented:
+  - `show_airline_dashboard(parent, switch_page, back_page, back_args)`: Main panel
+    for the Manage Airlines section. Hosts routing buttons to edit airlines, modify
+    flights, view aircraft rosters, and edit crew members.
+  - `show_edit_airlines(parent, switch_page, back_page, back_args)`: Scrollable viewport
+    displaying active airlines, offering "Edit", "Delete", and "Add Airline" actions.
+  - `delete_airline_action(airline_id, switch_page, current_page, back_args_tuple)`:
+    Deletes an airline after user confirmation.
+  - `show_edit_airline_form(parent, switch_page, back_page, back_args, airline_id)`:
+    Provides an editing form to modify an airline's name or flight count.
+  - `show_add_airline_form(parent, switch_page, back_page, back_args)`: Form to register
+    a new airline, featuring automated auto-incrementing ID allocation.
+  - `show_add_flights_form(parent, switch_page, back_page, back_args)`: Allows scheduling
+    new flights. Automatically fetches and binds available gate/runway allocations, and
+    increments the associated airline's flight counter.
+  - `show_edit_flights(parent, switch_page, back_page, back_args)`: Scrollable viewport
+    containing flight logs. Integrates Edit and Delete buttons for flight rescheduling.
+  - `delete_flight_action(...)`: Confirms and deletes a flight, automatically releasing
+    occupied gate and runway resources and decrementing the airline's active flight count.
+  - `show_edit_flight_form(...)`: Interactive form to adjust a flight's routes, gates, 
+    runways, scheduled timings, or current status.
+  - `show_airline_information(...)`: Elegant card layout displaying registered 
+    airlines, IDs, and active fleet size.
+  - `show_aircraft_information(...)`: A comprehensive flight summary pane listing 
+    origin, destination, departure/arrival schedules, and gate/runway details.
+  - `show_crew_data(...)`: Lists crew personnel roster with names, roles, IDs, and airlines.
+  - `show_edit_crew(...)`: Renders roster modification lists with individual member edit/delete triggers.
+  - `delete_crew_action(...)`: Handles deletion of selected crew records from files.
+  - `show_edit_crew_form(...)`: Form to modify a crew member's name, role, and airline assignment.
+  - `show_add_crew_form(...)`: Interactive form to recruit a new crew member, featuring
+    automated ID generation.
+
+----------------------------------------
+F. ticket_module.py
+----------------------------------------
+Operates passenger ticket bookings, flight search operations, and boarding pass generation.
+Functions Implemented:
+  - `show_ticket_dashboard(parent, switch_page, back_page, back_args)`: Ticket desk 
+    dashboard panel offering links to find flights, book seats, view tickets, and print boarding passes.
+  - `show_flights_list(...)`: Lists departures, arrivals, and operational statuses.
+  - `show_booking_form(...)`: Complex form handling ticket purchasing. It implements 
+    cascading inputs: selecting an origin updates the destination list; selecting a destination 
+    populates eligible flights; choosing a flight lists available seats in a 3D matrix (10 rows 
+    by A-F seat layout) after excluding reserved seats.
+  - `show_bookings_list(...)`: Displays passenger manifest records.
+  - `show_print_ticket_prompt(parent, default_passenger_id=None)`: Renders a terminal-like 
+    receipt styled in black-on-white monospace text. It pulls passenger flight data and seat 
+    allocations to create a printable boarding pass representation.
+
+----------------------------------------
+G. atc_module.py
+----------------------------------------
+The Air Traffic Control dashboard. Renders active gates, runways, and flight statuses.
+Functions Implemented:
+  - `show_atc_dashboard(parent, switch_page, back_page, back_args)`: Access center 
+    directing to gate boards, runways, schedules, and status grids.
+  - `show_gate_management(...)`: Lists gates, locations (terminals), and live status flags.
+  - `update_gate_status(...)`: Overwrites gate statuses inside CSV structures.
+  - `show_runway_management(...)`: Renders runway logs, structural lengths, and status flags.
+  - `update_runway_status(...)`: Overwrites runway statuses inside CSV files.
+  - `show_flight_schedule(...)`: Interactive schedule screen showing flight data and resource allocations.
+  - `show_flight_status(...)`: Displays flight status updates.
+  - `update_flight_status(...)`: Utility to update flight statuses.
+
+----------------------------------------
+H. checkin_module.py
+----------------------------------------
+Handles passenger luggage constraints and check-in processing.
+Functions Implemented:
+  - `show_checkin_dashboard(...)`: Entrance portal to check passengers in, log baggage 
+    weights, and inspect manifest registries.
+  - `show_checkin_form(...)`: Evaluates baggage weight (applying a strict 25kg safety limit) 
+    and transitions a passenger's checked-in status to "Yes".
+  - `show_baggage_info(...)`: Details baggage weights and check-in statuses.
+  - `show_checkedin_passengers(...)`: Manifest of checked-in passengers.
+
+----------------------------------------
+I. simulation_engine.py
+----------------------------------------
+The heartbeat of the application. Dictates simulated clock updates and cycles event states.
+Functions Implemented:
+  - `get_sim_time()`: Retrieves current virtual datetime.
+  - `tick()`: Advances the clock using the speed constant (`TIME_SPEED`).
+  - `update_simulation(root)`: Periodic function executing every 1.0 second. It processes 
+    events in `scheduler.py` and restarts the clock thread via `root.after(1000)`.
+  - `start()` / `stop()`: Toggles the background simulation clock state.
+  - `set_sim_time(new_time)`: Updates simulation clock to a specified datetime.
+  - `get_time_speed()` / `set_time_speed(minutes_per_second)`: Get and set the time speed multiplier.
+  - `reset(start_time)`: Restores simulation clock back to epoch values.
+
+----------------------------------------
+J. scheduler.py
+----------------------------------------
+Controls time-based operations and handles automatic runway/gate scheduling.
+Functions Implemented:
+  - `_time_to_minutes(time_str)`: Converts `HH:MM` string format into numeric minutes.
+  - `_subtract_minutes(time_str, minutes)`: Helper subtracting elapsed time intervals.
+  - `_add_minutes(time_str, minutes)`: Helper adding elapsed time intervals.
+  - `_should_delay()`: Randomizer returning true on 1-in-10 odds (10% delay risk).
+  - `_release_resources(gate_id, runway_id)`: Frees up locked gate and runway resources.
+  - `_occupy_gate(gate_id)` / `_release_gate(gate_id)`: Updates gate occupancy status.
+  - `_occupy_runway(runway_id, flight_id)`: Locks runway usage during takeoff, scheduling 
+    an automated release event 15 minutes after scheduled departure.
+  - `_release_runway(runway_id)`: Frees up a runway.
+  - `_get_available_runways()`: Queries available runways.
+  - `_assign_runway(flight)`: Intelligently assigns an available runway to a flight, 
+    avoiding schedule conflicts. Falls back to other runways if conflicts occur.
+  - `schedule_event(event_time, callback, *args, **kwargs)`: Enqueues a delayed task 
+    into a priority sorted list (`scheduled_events`).
+  - `process_scheduled_events(current_time)`: Fires due events whose event times are less 
+    than or equal to the virtual simulation time.
+  - `process_flights()`: Evaluates every active flight against scheduled departure and arrival 
+    times, driving automatic status updates and gate/runway resource scheduling.
+  - `get_pending_events()`: Returns the list of queued background simulation tasks.
+
+--------------------------------------------------------------------------------
+4. CSV DATABASE SCHEMA
+--------------------------------------------------------------------------------
+The database is structured as six distinct CSV tables:
+
+1. database/airlines.csv
+   - Field names: `airline_id`, `name`, `flights`
+   - Example row: `AIR001,Air India,12`
+
+2. database/crew.csv
+   - Field names: `crew_id`, `name`, `role`, `airline_id`
+   - Example row: `CR001,Capt. Rajesh Sharma,Captain,AIR001`
+
+3. database/flights.csv
+   - Field names: `flight_id`, `airline`, `origin`, `destination`, `departure_time`, `arrival_time`, `status`, `gate`, `runway`
+   - Example row: `FL001,AIR001,DEL,BOM,08:00,10:15,SCHEDULED,GATE_A1,RUNWAY_01`
+
+4. database/passengers.csv
+   - Field names: `passenger_id`, `name`, `flight_id`, `seat`, `checked_in`, `baggage_weight`
+   - Example row: `PASS001,Amit Verma,FL001,04C,Yes,18.5`
+
+5. database/runways.csv
+   - Field names: `runway_id`, `length`, `status`
+   - Example row: `RUNWAY_01,3500,AVAILABLE`
+
+6. database/gates.csv
+   - Field names: `gate_id`, `terminal`, `status`
+   - Example row: `GATE_A1,Terminal 1,AVAILABLE`
+
+================================================================================
+                                END OF REPORT
+================================================================================
