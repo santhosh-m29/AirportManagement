@@ -28,9 +28,11 @@ def show_passkey_page(parent, switch_page, module_name, route_callback, back_pag
     parent.configure(bg=BG_COLOR)
     create_header(parent, switch_page, back_page, back_args)
     
+    content_wrapper = tk.Frame(parent, bg=BG_COLOR)
+    content_wrapper.pack(expand=True, fill="both")
 
-    card = tk.Frame(parent, bg=CARD_COLOR, width=400, height=250)
-    card.place(relx=0.5, rely=0.5, anchor="center")
+    card = tk.Frame(content_wrapper, bg=CARD_COLOR, width=400, height=250)
+    card.pack(expand=True)
     card.pack_propagate(False)
 
     tk.Label(card,

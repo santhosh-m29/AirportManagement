@@ -20,7 +20,7 @@ root.attributes("-fullscreen", True)
 root.bind("<Escape>", lambda event: root.attributes("-fullscreen", False))
 #root.resizable(False, False)
 
-# Top bar for global controls and clock
+# Top bar for global controls
 top_bar = tk.Frame(root, bg="#0f172a")
 top_bar.pack(fill="x")
 nav_button = tk.Button(top_bar,
@@ -40,12 +40,27 @@ settings_button = tk.Button(top_bar,
                             command=lambda: show_settings())
 settings_button.pack_forget()
 
-clock_label = tk.Label(top_bar,
+close_button = tk.Button(top_bar,
+                         text="Close App",
+                         font=("Segoe UI", 14, "bold"),
+                         bg="#0f172a",
+                         fg="white",
+                         relief="flat",
+                         activebackground="#dc2626",
+                         activeforeground="white",
+                         command=root.destroy,
+                         cursor="hand2")
+close_button.pack_forget()
+
+bottom_bar = tk.Frame(root, bg="#0f172a")
+bottom_bar.pack(side="bottom", fill="x")
+
+clock_label = tk.Label(bottom_bar,
                        text="",
                        font=("Segoe UI", 14),
                        fg="#a5b4fc",
                        bg="#0f172a")
-clock_label.pack(side="right", padx=20, pady=10)
+clock_label.pack(side="left", padx=20, pady=10)
 
 
 def set_nav_button(text, command):
@@ -69,6 +84,41 @@ refresh_clock()
 main_container = tk.Frame(root, bg="#0f172a")
 main_container.pack(fill="both", expand=True)
 
+scroll_canvas = tk.Canvas(main_container, bg="#0f172a", highlightthickness=0)
+scrollbar = tk.Scrollbar(main_container, orient="vertical", command=scroll_canvas.yview)
+scroll_canvas.configure(yscrollcommand=scrollbar.set)
+scrollbar.pack(side="right", fill="y")
+scroll_canvas.pack(side="left", fill="both", expand=True)
+
+scrollable_area = tk.Frame(scroll_canvas, bg="#0f172a")
+scroll_window = scroll_canvas.create_window((0, 0), window=scrollable_area, anchor="nw")
+
+
+def on_scrollable_configure(event):
+    scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all"))
+
+
+def on_canvas_configure(event):
+    scroll_canvas.itemconfig(scroll_window, width=event.width)
+
+
+scrollable_area.bind("<Configure>", on_scrollable_configure)
+scroll_canvas.bind("<Configure>", on_canvas_configure)
+
+
+def on_mousewheel(event):
+    if event.delta:
+        scroll_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    elif event.num == 5:
+        scroll_canvas.yview_scroll(1, "units")
+    elif event.num == 4:
+        scroll_canvas.yview_scroll(-1, "units")
+
+
+root.bind_all("<MouseWheel>", on_mousewheel)
+root.bind_all("<Button-4>", on_mousewheel)
+root.bind_all("<Button-5>", on_mousewheel)
+
 current_frame = None
 
 # ===================== PAGE SWITCH FUNCTION =====================
@@ -76,14 +126,18 @@ def switch_page(page_function, *args):
     global current_frame
 
     settings_button.pack_forget()
+    close_button.pack_forget()
     clear_nav_button()
     if current_frame is not None:
         current_frame.destroy()
 
-    current_frame = tk.Frame(main_container, bg="#0f172a")
-    current_frame.pack(fill="both", expand=True)
+    current_frame = tk.Frame(scrollable_area, bg="#0f172a")
+    current_frame.pack(fill="x", expand=True)
 
     page_function(current_frame, switch_page, *args)
+
+    scroll_canvas.update_idletasks()
+    scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all"))
 
 # ===================== MODULE ROUTER =====================
 def route_module(module_name):
@@ -157,6 +211,7 @@ def show_settings():
 
 def show_home(parent, switch_page):
     settings_button.pack(side="left", padx=20, pady=10)
+    close_button.pack(side="right", padx=20, pady=10)
 
     tk.Label(parent,
              text="AIRPORT MANAGEMENT SYSTEM",
