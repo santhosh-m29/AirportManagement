@@ -137,9 +137,34 @@ def process_scheduled_events(current_time: datetime):
         scheduled_events.remove(event)
 
 
+LAST_DATE = None
+
+
 def process_flights():
+    global LAST_DATE
     flights = get_all_flights()
-    current = simulation_engine.SIM_TIME.strftime("%H:%M")
+    current_dt = simulation_engine.SIM_TIME
+    current_date = current_dt.date()
+
+    if LAST_DATE is not None and current_date > LAST_DATE:
+        # Day has changed! Reset completed flights to SCHEDULED
+        for flight in flights:
+            if flight.get("status") in ["ARRIVED", "CANCELLED"]:
+                update_flight_status(flight["flight_id"], "SCHEDULED")
+                update_flight_fields(flight["flight_id"], runway="")
+        # Reset gates and runways
+        from db_utils import get_all_gates, get_all_runways
+        for gate in get_all_gates():
+            update_gate_status(gate["gate_id"], "AVAILABLE")
+        for runway in get_all_runways():
+            update_runway_status(runway["runway_id"], "AVAILABLE")
+        # Reload flights database
+        flights = get_all_flights()
+
+    LAST_DATE = current_date
+
+    current = current_dt.strftime("%H:%M")
+    c_mins = _time_to_minutes(current)
 
     for flight in flights:
         departure = flight.get("departure_time") or flight.get("departure")
@@ -155,15 +180,60 @@ def process_flights():
             if assigned_runway:
                 flight["runway"] = assigned_runway
 
-        if status == "ARRIVED":
+        d_mins = _time_to_minutes(departure)
+        a_mins = _time_to_minutes(arrival)
+
+        is_overnight = a_mins < d_mins
+        check_in_open_mins = d_mins - 120
+
+        if status in ["ARRIVED", "CANCELLED"]:
+            # Stale flight auto-reset (e.g. if the app is started with old database state)
+            is_stale = False
+            if not is_overnight:
+                if c_mins < check_in_open_mins:
+                    is_stale = True
+            else:
+                if c_mins > a_mins and c_mins < check_in_open_mins:
+                    is_stale = True
+
+            if is_stale and status == "ARRIVED":
+                update_flight_status(flight["flight_id"], "SCHEDULED")
+                update_flight_fields(flight["flight_id"], runway="")
+                status = "SCHEDULED"
+            else:
+                continue
+
+        # Handle overnight flights
+        if a_mins < d_mins:
+            a_mins += 24 * 60
+
+        boarding_mins = d_mins - 30
+        gate_closed_mins = d_mins - 10
+        taxiing_mins = d_mins - 5
+
+        # Determine target status based on current time
+        if c_mins >= a_mins:
+            target_status = "ARRIVED"
+        elif c_mins > d_mins:
+            target_status = "IN AIR"
+        elif c_mins == d_mins:
+            target_status = "DEPARTED"
+        elif c_mins >= taxiing_mins:
+            target_status = "TAXIING"
+        elif c_mins >= gate_closed_mins:
+            target_status = "GATE CLOSED"
+        elif c_mins >= boarding_mins:
+            target_status = "BOARDING"
+        elif c_mins >= check_in_open_mins:
+            target_status = "CHECK-IN OPEN"
+        else:
+            target_status = status  # Keep current status (SCHEDULED, DELAYED, etc.)
+
+        if target_status == status:
             continue
 
-        check_in_open = _subtract_minutes(departure, 120)
-        boarding = _subtract_minutes(departure, 30)
-        gate_closed = _subtract_minutes(departure, 10)
-        taxiing = _subtract_minutes(departure, 5)
-
-        if current == check_in_open:
+        # Now perform transition side-effects and update status
+        if target_status == "CHECK-IN OPEN":
             if status != "DELAYED" and _should_delay():
                 new_departure = _add_minutes(departure, 15)
                 new_arrival = _add_minutes(arrival, 15)
@@ -172,10 +242,9 @@ def process_flights():
             update_flight_status(flight["flight_id"], "CHECK-IN OPEN")
             if flight.get("gate"):
                 _occupy_gate(flight.get("gate"))
-            continue
 
-        if current == boarding:
-            if status != "DELAYED" and _should_delay():
+        elif target_status == "BOARDING":
+            if status not in ["DELAYED", "CHECK-IN OPEN"] and _should_delay():
                 new_departure = _add_minutes(departure, 15)
                 new_arrival = _add_minutes(arrival, 15)
                 reschedule_flight(flight["flight_id"], new_departure, new_arrival, status="DELAYED")
@@ -183,33 +252,32 @@ def process_flights():
             update_flight_status(flight["flight_id"], "BOARDING")
             if flight.get("gate"):
                 _occupy_gate(flight.get("gate"))
-            continue
 
-        if current == gate_closed:
+        elif target_status == "GATE CLOSED":
             update_flight_status(flight["flight_id"], "GATE CLOSED")
-            continue
 
-        if current == taxiing:
+        elif target_status == "TAXIING":
             assigned_runway = _assign_runway(flight)
             if assigned_runway:
                 update_flight_fields(flight["flight_id"], runway=assigned_runway)
+                _occupy_runway(assigned_runway, flight["flight_id"])
             if flight.get("gate"):
                 _release_gate(flight.get("gate"))
             update_flight_status(flight["flight_id"], "TAXIING")
-            if assigned_runway:
-                _occupy_runway(assigned_runway, flight["flight_id"])
-            continue
 
-        if current == departure:
+        elif target_status == "DEPARTED":
+            if flight.get("gate"):
+                _release_gate(flight.get("gate"))
             update_flight_status(flight["flight_id"], "DEPARTED")
-            continue
 
-        if _time_to_minutes(departure) < _time_to_minutes(current) < _time_to_minutes(arrival):
+        elif target_status == "IN AIR":
+            if flight.get("gate"):
+                _release_gate(flight.get("gate"))
             if status != "IN AIR":
                 update_flight_status(flight["flight_id"], "IN AIR")
-            continue
 
-        if current == arrival:
+        elif target_status == "ARRIVED":
+            _release_resources(flight.get("gate"), flight.get("runway"))
             update_flight_status(flight["flight_id"], "ARRIVED")
 
 
