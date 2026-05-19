@@ -279,9 +279,9 @@ def show_home(parent, switch_page):
     # 2x2 Grid setup
     modules_data = [
         ("MANAGE AIRLINES", "MANAGE AIRLINES", "✈", "Fleet, Flights & Crews", "Manage airline details, flight schedules, and crew rosters.", "#3b82f6", 0, 0),
-        ("TICKET COUNTER", "TICKET COUNTER", "🎫", "Booking & Boarding Passes", "Purchase tickets, view scheduled routes, and print boarding passes.", "#10b981", 0, 1),
-        ("ATC OPERATIONS", "ATC", "📡", "Gates & Runways Control", "Monitor active runway and gate usage, and update flight statuses.", "#f59e0b", 1, 0),
-        ("CHECKIN DESK", "CHECKIN", "🛂", "Luggage & Check-in Desk", "Process passenger check-ins and log baggage weight metrics.", "#ec4899", 1, 1)
+        ("TICKET COUNTER", "TICKET COUNTER", "🎫", "Booking & Boarding Passes", "Purchase tickets, view routes and boarding passes.", "#10b981", 0, 1),
+        ("ATC OPERATIONS", "ATC", "📡", "Gates & Runways Control", "Monitor runway, gates, and update flight statuses.", "#f59e0b", 1, 0),
+        ("CHECKIN DESK", "CHECKIN", "🛂", "Luggage & Check-in Desk", "Process passenger check-ins and log baggage weight.", "#ec4899", 1, 1)
     ]
 
     for display_name, module_key, icon, subtitle, desc, color, row, col in modules_data:
