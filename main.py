@@ -12,8 +12,8 @@ import checkin_module
 import db_utils
 
 # ===================== PREMIUM DESIGN SYSTEM =====================
-BG_COLOR = "#0b0f19"
-CARD_COLOR = "#151f32"
+BG_COLOR = "#0f172a"
+CARD_COLOR = "#1e293b"
 BORDER_COLOR = "#243249"
 TEXT_COLOR = "#f8fafc"
 SUB_TEXT = "#94a3b8"

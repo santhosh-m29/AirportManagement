@@ -1,8 +1,8 @@
 gate_id,terminal,status
-A1,Terminal 1,AVAILABLE
+A1,Terminal 1,OCCUPIED
 A2,Terminal 1,AVAILABLE
-B1,Terminal 2,OCCUPIED
-B2,Terminal 2,AVAILABLE
+B1,Terminal 2,AVAILABLE
+B2,Terminal 2,OCCUPIED
 C1,Terminal 3,AVAILABLE
 D1,Terminal 3,AVAILABLE
-E1,Terminal 4,OCCUPIED
+E1,Terminal 4,AVAILABLE
