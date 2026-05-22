@@ -89,11 +89,11 @@ def show_edit_airlines(parent, switch_page, back_page, back_args):
     airlines = db_utils.get_all_airlines()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=950, height=400)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=950, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=950, height=400)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=950, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -350,11 +350,11 @@ def show_edit_flights(parent, switch_page, back_page, back_args):
     flights = db_utils.get_all_flights()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=400)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=400)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -570,11 +570,11 @@ def show_aircraft_information(parent, switch_page, back_page, back_args):
     flights = db_utils.get_all_flights()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1350, height=400)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1350, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1350, height=400)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1350, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -625,11 +625,11 @@ def show_crew_data(parent, switch_page, back_page, back_args):
     crew = db_utils.get_all_crew()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=400)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=400)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -649,6 +649,7 @@ def show_crew_data(parent, switch_page, back_page, back_args):
     tk.Label(header_frame, text="Name", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=25).pack(side="left")
     tk.Label(header_frame, text="Role", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
     tk.Label(header_frame, text="Airline", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+    tk.Label(header_frame, text="Status", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=22).pack(side="left")
 
     # List items
     for member in crew:
@@ -658,6 +659,10 @@ def show_crew_data(parent, switch_page, back_page, back_args):
         tk.Label(row_frame, text=member['name'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=25).pack(side="left")
         tk.Label(row_frame, text=member['role'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
         tk.Label(row_frame, text=member['airline_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
+        
+        status = db_utils.get_crew_status(member)
+        status_color = "#22c55e" if status == "Available" else ("#2563eb" if "Assigned" in status else "#eab308")
+        tk.Label(row_frame, text=status, font=("Segoe UI", 10), fg=status_color, bg=CARD_COLOR, width=22).pack(side="left")
 
 # ===================== EDIT CREW PAGE =====================
 def show_edit_crew(parent, switch_page, back_page, back_args):
@@ -674,11 +679,11 @@ def show_edit_crew(parent, switch_page, back_page, back_args):
     crew = db_utils.get_all_crew()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=400)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=400)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -694,21 +699,26 @@ def show_edit_crew(parent, switch_page, back_page, back_args):
     # List header
     header_frame = tk.Frame(list_frame, bg="#475569")
     header_frame.pack(fill="x", padx=10, pady=10)
-    tk.Label(header_frame, text="Crew ID", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=18).pack(side="left")
-    tk.Label(header_frame, text="Name", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=25).pack(side="left")
-    tk.Label(header_frame, text="Role", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
-    tk.Label(header_frame, text="Airline", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
-    tk.Label(header_frame, text="Actions", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+    tk.Label(header_frame, text="Crew ID", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
+    tk.Label(header_frame, text="Name", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=22).pack(side="left")
+    tk.Label(header_frame, text="Role", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=18).pack(side="left")
+    tk.Label(header_frame, text="Airline", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
+    tk.Label(header_frame, text="Status", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=20).pack(side="left")
+    tk.Label(header_frame, text="Actions", font=("Segoe UI", 10), fg=TEXT_COLOR, bg="#475569", width=15).pack(side="left")
 
     # List items
     for member in crew:
         row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
         row_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(row_frame, text=member['crew_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=18).pack(side="left")
-        tk.Label(row_frame, text=member['name'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=25).pack(side="left")
-        tk.Label(row_frame, text=member['role'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
-        tk.Label(row_frame, text=member['airline_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=20).pack(side="left")
+        tk.Label(row_frame, text=member['crew_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
+        tk.Label(row_frame, text=member['name'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=22).pack(side="left")
+        tk.Label(row_frame, text=member['role'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=18).pack(side="left")
+        tk.Label(row_frame, text=member['airline_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
         
+        status = db_utils.get_crew_status(member)
+        status_color = "#22c55e" if status == "Available" else ("#2563eb" if "Assigned" in status else "#eab308")
+        tk.Label(row_frame, text=status, font=("Segoe UI", 10), fg=status_color, bg=CARD_COLOR, width=20).pack(side="left")
+
         action_frame = tk.Frame(row_frame, bg=CARD_COLOR)
         action_frame.pack(side="left", fill="x", expand=True)
         tk.Button(action_frame, text="Edit", bg=BTN_PRIMARY, fg="white", relief="flat", width=6,

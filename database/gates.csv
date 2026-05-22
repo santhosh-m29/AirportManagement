@@ -1,8 +1,9 @@
-gate_id,terminal,status
-A1,Terminal 1,AVAILABLE
-A2,Terminal 1,AVAILABLE
-B1,Terminal 2,AVAILABLE
-B2,Terminal 2,AVAILABLE
-C1,Terminal 3,AVAILABLE
-D1,Terminal 3,AVAILABLE
-E1,Terminal 4,AVAILABLE
+gate_id,terminal,status,manual_override
+A1,Terminal 1,AVAILABLE,
+A2,Terminal 1,AVAILABLE,
+B1,Terminal 2,AVAILABLE,
+B2,Terminal 2,AVAILABLE,
+C1,Terminal 3,AVAILABLE,
+C2,Terminal 3,AVAILABLE,
+D1,Terminal 4,AVAILABLE,
+D2,Terminal 4,AVAILABLE,

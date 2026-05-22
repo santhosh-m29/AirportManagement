@@ -10,6 +10,10 @@ import ticket_module
 import atc_module
 import checkin_module
 import db_utils
+from airport_settings import (
+    load_settings, save_settings, get_airport, set_airport, get_crew_rest_time,
+    get_fueling_time, get_checkin_threshold, is_auto_checkin_enabled, set_auto_checkin
+)
 
 # ===================== PREMIUM DESIGN SYSTEM =====================
 BG_COLOR = "#0f172a"
@@ -98,7 +102,7 @@ bottom_bar = tk.Frame(root, bg=BG_COLOR)
 bottom_bar.pack(side="bottom", fill="x")
 
 clock_label = tk.Label(bottom_bar,
-                       text="",
+                       text=f"Simulation Clock: {get_sim_time().strftime('%Y-%m-%d %H:%M')} | Airport: {get_airport()}",
                        font=("Segoe UI", 12, "bold"),
                        fg=SUB_TEXT,
                        bg=BG_COLOR)
@@ -118,7 +122,7 @@ root.clear_nav_button = clear_nav_button
 
 
 def refresh_clock():
-    clock_label.config(text=f"Simulation Clock: {get_sim_time().strftime('%Y-%m-%d %H:%M')}")
+    clock_label.config(text=f"Simulation Clock: {get_sim_time().strftime('%Y-%m-%d %H:%M')} | Airport: {get_airport()}")
     clock_label.after(1000, refresh_clock)
 
 refresh_clock()
@@ -193,56 +197,140 @@ def route_module(module_name):
     # Pass show_home into module
     switch_page(module_routes[module_name], show_home, ())
 
+
+
 # ===================== SETTINGS PANEL =====================
 def show_settings():
     settings_win = tk.Toplevel(root)
-    settings_win.title("Simulation Settings")
+    settings_win.title("Airport Management Settings")
     settings_win.configure(bg=BG_COLOR)
-    settings_win.geometry("520x400")
+    settings_win.geometry("600x700")
     settings_win.resizable(False, False)
 
-    tk.Label(settings_win, text="Simulation Control Center", font=("Segoe UI", 18, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=(30, 15))
+    tk.Label(settings_win, text="System Configuration Center", font=("Segoe UI", 18, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=(20, 15))
 
-    content = tk.Frame(settings_win, bg=BG_COLOR)
-    content.pack(padx=30, pady=10)
-
-    tk.Label(content, text="Set Simulation Time:", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).grid(row=0, column=0, sticky="w", pady=12)
-    current_time_var = tk.StringVar(value=get_sim_time().strftime('%Y-%m-%d %H:%M'))
+    # Create scrollable frame for settings
+    canvas = tk.Canvas(settings_win, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(settings_win, orient="vertical", command=canvas.yview)
+    canvas.configure(yscrollcommand=scrollbar.set)
     
-    # Custom input frame for 1px border
+    scrollbar.pack(side="right", fill="y")
+    canvas.pack(side="left", fill="both", expand=True, padx=10)
+
+    content = tk.Frame(canvas, bg=BG_COLOR)
+    canvas.create_window((0, 0), window=content, anchor="nw")
+
+    def on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    
+    content.bind("<Configure>", on_frame_configure)
+
+    # ===== SIMULATION SETTINGS =====
+    tk.Label(content, text="Simulation Control", font=("Segoe UI", 13, "bold"), fg=ACCENT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 10), padx=20)
+
+    tk.Label(content, text="Set Simulation Time:", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(10, 5), padx=20)
+    current_time_var = tk.StringVar(value=get_sim_time().strftime('%Y-%m-%d %H:%M'))
     entry_frame = tk.Frame(content, bg=BORDER_COLOR, padx=1, pady=1)
-    entry_frame.grid(row=0, column=1, padx=15, pady=12, sticky="w")
-    current_time_entry = tk.Entry(entry_frame, textvariable=current_time_var, width=20, font=("Segoe UI", 11), bg="#111827", fg="white", insertbackground="white", relief="flat")
+    entry_frame.pack(anchor="w", padx=20, pady=5)
+    current_time_entry = tk.Entry(entry_frame, textvariable=current_time_var, width=25, font=("Segoe UI", 10), bg="#111827", fg="white", insertbackground="white", relief="flat")
     current_time_entry.pack(padx=2, pady=2)
 
-    tk.Label(content, text="Growth Rate (1s = X min):", font=("Segoe UI", 11), fg=TEXT_COLOR, bg=BG_COLOR).grid(row=1, column=0, sticky="w", pady=12)
+    tk.Label(content, text="Growth Rate (1 sec = X min):", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(15, 5), padx=20)
     speed_var = tk.StringVar(value=str(get_time_speed()))
     speed_options = ["1", "2", "5", "10", "15", "30"]
     speed_menu = tk.OptionMenu(content, speed_var, *speed_options)
-    speed_menu.configure(font=("Segoe UI", 10, "bold"), bg="#111827", fg=TEXT_COLOR, activebackground=ACCENT_COLOR, activeforeground="white", relief="flat", highlightthickness=0, width=12, cursor="hand2")
+    speed_menu.configure(font=("Segoe UI", 10, "bold"), bg="#111827", fg=TEXT_COLOR, activebackground=ACCENT_COLOR, activeforeground="white", relief="flat", highlightthickness=0, width=20)
     speed_menu["menu"].configure(bg="#111827", fg=TEXT_COLOR, font=("Segoe UI", 10), activebackground=ACCENT_COLOR, activeforeground="white", relief="flat")
-    speed_menu.grid(row=1, column=1, padx=15, pady=12, sticky="w")
+    speed_menu.pack(anchor="w", padx=20, pady=5)
+
+    # ===== AIRPORT SETTINGS =====
+    tk.Label(content, text="Airport Configuration", font=("Segoe UI", 13, "bold"), fg=ACCENT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 10), padx=20)
+
+    tk.Label(content, text="Current Airport:", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(10, 5), padx=20)
+    airport_var = tk.StringVar(value=get_airport())
+    airport_options = ["Chennai", "Dubai", "Paris", "London", "New York", "Sydney", "Bangkok", "Singapore", "Tokyo", "Hong Kong"]
+    airport_menu = tk.OptionMenu(content, airport_var, *airport_options)
+    airport_menu.configure(font=("Segoe UI", 10, "bold"), bg="#111827", fg=TEXT_COLOR, activebackground=ACCENT_COLOR, activeforeground="white", relief="flat", highlightthickness=0, width=20)
+    airport_menu["menu"].configure(bg="#111827", fg=TEXT_COLOR, font=("Segoe UI", 10), activebackground=ACCENT_COLOR, activeforeground="white", relief="flat")
+    airport_menu.pack(anchor="w", padx=20, pady=5)
+
+    # ===== OPERATIONAL SETTINGS =====
+    tk.Label(content, text="Operational Settings", font=("Segoe UI", 13, "bold"), fg=ACCENT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(20, 10), padx=20)
+
+    tk.Label(content, text="Crew Rest Time (minutes):", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(10, 5), padx=20)
+    crew_rest_var = tk.StringVar(value=str(get_crew_rest_time()))
+    crew_rest_entry = tk.Entry(content, textvariable=crew_rest_var, width=25, font=("Segoe UI", 10), bg="#111827", fg="white", insertbackground="white", relief="flat")
+    crew_rest_entry.pack(anchor="w", padx=20, pady=5)
+
+    tk.Label(content, text="Fueling Time (minutes):", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(10, 5), padx=20)
+    fueling_var = tk.StringVar(value=str(get_fueling_time()))
+    fueling_entry = tk.Entry(content, textvariable=fueling_var, width=25, font=("Segoe UI", 10), bg="#111827", fg="white", insertbackground="white", relief="flat")
+    fueling_entry.pack(anchor="w", padx=20, pady=5)
+
+    tk.Label(content, text="Check-in Threshold (%):", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=BG_COLOR).pack(anchor="w", pady=(10, 5), padx=20)
+    checkin_var = tk.StringVar(value=str(get_checkin_threshold()))
+    checkin_entry = tk.Entry(content, textvariable=checkin_var, width=25, font=("Segoe UI", 10), bg="#111827", fg="white", insertbackground="white", relief="flat")
+    checkin_entry.pack(anchor="w", padx=20, pady=5)
+
+    # ===== AUTO CHECK-IN =====
+    auto_checkin_var = tk.BooleanVar(value=is_auto_checkin_enabled())
+    auto_checkin_check = tk.Checkbutton(content, text="Enable Auto Check-in", font=("Segoe UI", 10), fg=TEXT_COLOR, bg=BG_COLOR, activebackground=BG_COLOR, activeforeground=TEXT_COLOR, selectcolor=ACCENT_COLOR, variable=auto_checkin_var)
+    auto_checkin_check.pack(anchor="w", padx=20, pady=(15, 20))
+
+    # ===== BUTTONS =====
+    button_frame = tk.Frame(content, bg=BG_COLOR)
+    button_frame.pack(pady=20, padx=20, fill="x")
 
     def apply_settings():
-        time_text = current_time_var.get().strip()
         try:
-            new_time = datetime.strptime(time_text, '%Y-%m-%d %H:%M')
-        except ValueError:
-            messagebox.showerror("Invalid Time", "Enter time as YYYY-MM-DD HH:MM")
-            return
-        set_sim_time(new_time)
-        try:
-            new_speed = int(speed_var.get())
-        except ValueError:
-            messagebox.showerror("Invalid Speed", "Growth rate must be a number.")
-            return
-        set_time_speed(new_speed)
-        clock_label.config(text=f"Simulation Clock: {get_sim_time().strftime('%Y-%m-%d %H:%M')}")
-        messagebox.showinfo("Settings Updated", f"Simulation time set to {time_text} and growth rate changed to 1 sec = {new_speed} min.")
-        settings_win.destroy()
+            # Validate time
+            time_text = current_time_var.get().strip()
+            try:
+                new_time = datetime.strptime(time_text, '%Y-%m-%d %H:%M')
+            except ValueError:
+                messagebox.showerror("Invalid Time", "Enter time as YYYY-MM-DD HH:MM")
+                return
+            
+            # Validate speed
+            try:
+                new_speed = int(speed_var.get())
+            except ValueError:
+                messagebox.showerror("Invalid Speed", "Growth rate must be a number.")
+                return
+            
+            # Validate operational settings
+            try:
+                crew_rest = int(crew_rest_var.get())
+                fueling_time = int(fueling_var.get())
+                checkin_thresh = int(checkin_var.get())
+                if crew_rest < 0 or fueling_time < 0 or checkin_thresh < 0:
+                    messagebox.showerror("Invalid Values", "All values must be positive.")
+                    return
+            except ValueError:
+                messagebox.showerror("Invalid Values", "Operational settings must be numbers.")
+                return
+            
+            # Apply settings
+            set_sim_time(new_time)
+            set_time_speed(new_speed)
+            set_airport(airport_var.get())
+            set_auto_checkin(auto_checkin_var.get())
+            
+            # Save to settings file
+            settings = load_settings()
+            settings['crew_rest_time'] = crew_rest
+            settings['fueling_time'] = fueling_time
+            settings['checkin_threshold'] = checkin_thresh
+            save_settings(settings)
+            
+            clock_label.config(text=f"Simulation Clock: {get_sim_time().strftime('%Y-%m-%d %H:%M')} | Airport: {airport_var.get()}")
+            messagebox.showinfo("Settings Updated", "All settings have been applied successfully!")
+            settings_win.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
-    apply_btn = tk.Button(settings_win, text="Apply Configurations", font=("Segoe UI", 11, "bold"), bg=BTN_SUCCESS, fg="white", activebackground=SUCCESS_HOVER, activeforeground="white", relief="flat", padx=25, pady=6, cursor="hand2", command=apply_settings)
-    apply_btn.pack(pady=10)
+    apply_btn = tk.Button(button_frame, text="Apply Settings", font=("Segoe UI", 11, "bold"), bg=BTN_SUCCESS, fg="white", activebackground=SUCCESS_HOVER, activeforeground="white", relief="flat", padx=25, pady=8, cursor="hand2", command=apply_settings)
+    apply_btn.pack(fill="x", pady=5)
     add_hover(apply_btn, SUCCESS_HOVER, BTN_SUCCESS)
 
     def refresh_simulation_data():
@@ -251,8 +339,8 @@ def show_settings():
             messagebox.showinfo("Reset Complete", "CSV data has been restored to initial simulation state.")
             settings_win.destroy()
 
-    reset_btn = tk.Button(settings_win, text="Reset Database Simulation", font=("Segoe UI", 10, "bold"), bg=BTN_DANGER, fg="white", activebackground=DANGER_HOVER, activeforeground="white", relief="flat", padx=15, pady=5, cursor="hand2", command=refresh_simulation_data)
-    reset_btn.pack(pady=(10, 20))
+    reset_btn = tk.Button(button_frame, text="Reset Database", font=("Segoe UI", 11, "bold"), bg=BTN_DANGER, fg="white", activebackground=DANGER_HOVER, activeforeground="white", relief="flat", padx=25, pady=8, cursor="hand2", command=refresh_simulation_data)
+    reset_btn.pack(fill="x", pady=5)
     add_hover(reset_btn, DANGER_HOVER, BTN_DANGER)
 
 # ===================== HOME PAGE =====================
@@ -281,7 +369,7 @@ def show_home(parent, switch_page):
         ("MANAGE AIRLINES", "MANAGE AIRLINES", "✈", "Fleet, Flights & Crews", "Manage airline details, flight schedules, and crew rosters.", "#3b82f6", 0, 0),
         ("TICKET COUNTER", "TICKET COUNTER", "🎫", "Booking & Boarding Passes", "Purchase tickets, view routes and boarding passes.", "#10b981", 0, 1),
         ("ATC OPERATIONS", "ATC", "📡", "Gates & Runways Control", "Monitor runway, gates, and update flight statuses.", "#f59e0b", 1, 0),
-        ("CHECKIN DESK", "CHECKIN", "🛂", "Luggage & Check-in Desk", "Process passenger check-ins and log baggage weight.", "#ec4899", 1, 1)
+        ("CHECK-IN COUNTER", "CHECKIN", "🧳", "Passenger Baggage & Check-in", "Verify passenger, baggage, and boarding passes.", "#8b5cf6", 1, 1)
     ]
 
     for display_name, module_key, icon, subtitle, desc, color, row, col in modules_data:

@@ -1,0 +1,7 @@
+{
+  "current_airport": "Dubai",
+  "auto_checkin_enabled": true,
+  "crew_rest_time": 30,
+  "fueling_time": 45,
+  "checkin_threshold": 50
+}

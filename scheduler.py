@@ -1,10 +1,19 @@
-"""Scheduler and flight status engine for the airport simulation."""
+"""Scheduler and flight status engine with advanced features."""
 
 import random
 from datetime import datetime, timedelta
 
 import simulation_engine
-from db_utils import get_all_flights, update_flight_status, update_gate_status, update_runway_status, reschedule_flight, update_flight_fields, get_all_runways
+from db_utils import (
+    get_all_flights, update_flight_status, update_gate_status, update_runway_status, 
+    reschedule_flight, update_flight_fields, get_all_runways, get_passengers_by_flight,
+    auto_checkin_passengers, get_checkin_percentage, update_fueling_status,
+    get_gate_override, get_runway_override, update_crew_assignment, assign_crew_to_flight,
+    get_available_crew, get_crew_by_airline, get_all_gates
+)
+from airport_settings import (
+    get_checkin_threshold, get_crew_rest_time, get_fueling_time, is_auto_checkin_enabled
+)
 
 scheduled_events = []
 
@@ -73,7 +82,7 @@ def _release_runway(runway_id):
 
 def _get_available_runways():
     runways = get_all_runways()
-    return [r['runway_id'] for r in runways if r.get('status', '').strip().lower() == 'available']
+    return [r['runway_id'] for r in runways if r.get('status', '').strip().lower() == 'available' and not get_runway_override(r['runway_id'])]
 
 
 def _assign_runway(flight):
@@ -140,6 +149,31 @@ def process_scheduled_events(current_time: datetime):
 LAST_DATE = None
 
 
+def _assign_crew_to_flight(flight):
+    """Automatically assign crew to a flight if not already assigned."""
+    if flight.get('crew_assigned'):
+        return  # Already assigned
+    
+    airline = flight.get('airline') or flight.get('airline_id')
+    departure_time = flight.get('departure_time') or flight.get('departure', '')
+    
+    if not airline or not departure_time:
+        return
+    
+    available_crew = get_available_crew(airline, departure_time)
+    if available_crew:
+        selected_crew = random.choice(available_crew)
+        assign_crew_to_flight(flight['flight_id'], selected_crew['crew_id'])
+        # Schedule crew rest time after flight lands
+        arrival_time = flight.get('arrival_time') or flight.get('arrival', '')
+        if arrival_time:
+            rest_until = _add_minutes(arrival_time, get_crew_rest_time())
+            schedule_event(
+                datetime(2026, 1, 1, int(arrival_time.split(':')[0]), int(arrival_time.split(':')[1])),
+                update_crew_assignment, selected_crew['crew_id'], flight['flight_id'], rest_until
+            )
+
+
 def process_flights():
     global LAST_DATE
     flights = get_all_flights()
@@ -152,12 +186,13 @@ def process_flights():
             if flight.get("status") in ["ARRIVED", "CANCELLED"]:
                 update_flight_status(flight["flight_id"], "SCHEDULED")
                 update_flight_fields(flight["flight_id"], runway="")
-        # Reset gates and runways
-        from db_utils import get_all_gates, get_all_runways
+        # Reset gates and runways (respecting manual overrides)
         for gate in get_all_gates():
-            update_gate_status(gate["gate_id"], "AVAILABLE")
+            if not get_gate_override(gate['gate_id']):
+                update_gate_status(gate["gate_id"], "AVAILABLE")
         for runway in get_all_runways():
-            update_runway_status(runway["runway_id"], "AVAILABLE")
+            if not get_runway_override(runway['runway_id']):
+                update_runway_status(runway["runway_id"], "AVAILABLE")
         # Reload flights database
         flights = get_all_flights()
 
@@ -170,8 +205,12 @@ def process_flights():
         departure = flight.get("departure_time") or flight.get("departure")
         arrival = flight.get("arrival_time") or flight.get("arrival")
         status = flight.get("status", "")
+        flight_type = flight.get("flight_type", "DEPARTURE")
 
         if not departure or not arrival:
+            continue
+            
+        if flight.get("manual_override") == "Yes":
             continue
 
         # Automatically allocate a runway if it is missing
@@ -232,8 +271,34 @@ def process_flights():
         if target_status == status:
             continue
 
+        # Check for manual overrides affecting departure flights
+        if flight_type == "DEPARTURE" and flight.get("gate"):
+            gate_override = get_gate_override(flight.get("gate"))
+            if gate_override == "CLOSED" and target_status in ["CHECK-IN OPEN", "BOARDING", "GATE CLOSED", "TAXIING"]:
+                # Delay the flight due to gate closure
+                new_departure = _add_minutes(departure, 15)
+                new_arrival = _add_minutes(arrival, 15)
+                reschedule_flight(flight["flight_id"], new_departure, new_arrival, status="DELAYED")
+                continue
+
+        if flight_type == "DEPARTURE" and flight.get("runway"):
+            runway_override = get_runway_override(flight.get("runway"))
+            if runway_override == "CLOSED" and target_status in ["TAXIING", "DEPARTED"]:
+                # Delay the flight due to runway closure
+                new_departure = _add_minutes(departure, 15)
+                new_arrival = _add_minutes(arrival, 15)
+                reschedule_flight(flight["flight_id"], new_departure, new_arrival, status="DELAYED")
+                continue
+
         # Now perform transition side-effects and update status
         if target_status == "CHECK-IN OPEN":
+            # Auto check-in passengers if enabled
+            if is_auto_checkin_enabled():
+                auto_checkin_passengers(flight["flight_id"], random.randint(10, 40))
+            
+            # Assign crew if not already assigned
+            _assign_crew_to_flight(flight)
+            
             if status != "DELAYED" and _should_delay():
                 new_departure = _add_minutes(departure, 15)
                 new_arrival = _add_minutes(arrival, 15)
@@ -254,6 +319,16 @@ def process_flights():
                 _occupy_gate(flight.get("gate"))
 
         elif target_status == "GATE CLOSED":
+            # Check if minimum check-in threshold is met before allowing gate closure
+            if flight_type == "DEPARTURE":
+                checkin_pct = get_checkin_percentage(flight["flight_id"])
+                threshold = get_checkin_threshold()
+                if checkin_pct < threshold:
+                    # Delay the flight due to insufficient check-ins
+                    new_departure = _add_minutes(departure, 15)
+                    new_arrival = _add_minutes(arrival, 15)
+                    reschedule_flight(flight["flight_id"], new_departure, new_arrival, status="DELAYED")
+                    continue
             update_flight_status(flight["flight_id"], "GATE CLOSED")
 
         elif target_status == "TAXIING":
@@ -278,6 +353,16 @@ def process_flights():
 
         elif target_status == "ARRIVED":
             _release_resources(flight.get("gate"), flight.get("runway"))
+            # Start fueling for arrival flights
+            if flight_type == "ARRIVAL":
+                update_fueling_status(flight["flight_id"], "IN PROGRESS")
+                fueling_time = get_fueling_time()
+                fueling_done_time = _add_minutes(arrival, fueling_time)
+                fueling_dt = datetime(2026, 1, 1, int(fueling_done_time.split(':')[0]), int(fueling_done_time.split(':')[1]))
+                current_dt = simulation_engine.SIM_TIME
+                if fueling_dt <= current_dt:
+                    fueling_dt += timedelta(days=1)
+                schedule_event(fueling_dt, update_fueling_status, flight["flight_id"], "COMPLETED")
             update_flight_status(flight["flight_id"], "ARRIVED")
 
 

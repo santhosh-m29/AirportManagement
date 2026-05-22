@@ -74,11 +74,11 @@ def show_flights_list(parent, switch_page, back_page, back_args):
     flights = db_utils.get_all_flights()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=380)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=380)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -296,11 +296,11 @@ def show_bookings_list(parent, switch_page, back_page, back_args):
     passengers = db_utils.get_all_passengers()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=380)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=380)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")

@@ -1,8 +1,11 @@
 airline_id,name,flights
-AIR001,Emirates,5
-AIR002,Qatar Airways,4
-AIR003,Singapore Airlines,3
-AIR004,AirAsia,7
-AIR005,Etihad,2
-AIR006,jishnupleeee,10
-AIR007,SoanPappadi,40
+AIR001,Emirates,0
+AIR002,Qatar Airways,0
+AIR003,Singapore Airlines,0
+AIR004,AirAsia,0
+AIR005,Etihad,0
+AIR006,IndiGo,0
+AIR007,SpiceJet,0
+AIR008,Air India,0
+AIR009,Lufthansa,0
+AIR010,British Airways,0

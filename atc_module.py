@@ -3,6 +3,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import db_utils
+from airport_settings import get_airport
 
 # ===================== THEME COLORS =====================
 BG_COLOR = "#0f172a"
@@ -64,6 +65,10 @@ def show_atc_dashboard(parent, switch_page, back_page, back_args):
                   lambda: switch_page(show_flight_status, show_atc_dashboard, (back_page, back_args))
                   ).pack(pady=15)
 
+    create_option("Arriving Flights Tracker",
+                  lambda: show_arriving_flights_window(parent)
+                  ).pack(pady=15)
+
 # ===================== GATE MANAGEMENT PAGE =====================
 def show_gate_management(parent, switch_page, back_page, back_args):
     parent.configure(bg=BG_COLOR)
@@ -74,11 +79,11 @@ def show_gate_management(parent, switch_page, back_page, back_args):
     gates = db_utils.get_all_gates()
 
     # Add a canvas and scrollbar for scrolling
-    container = tk.Frame(parent, bg=CARD_COLOR, width=850, height=350)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=850, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=850, height=350)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=850, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -139,11 +144,11 @@ def show_runway_management(parent, switch_page, back_page, back_args):
     runways = db_utils.get_all_runways()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=850, height=300)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=850, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=850, height=300)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=850, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -203,11 +208,11 @@ def show_flight_schedule(parent, switch_page, back_page, back_args):
     tk.Label(parent, text="Flight Schedule", font=("Segoe UI", 22, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=350)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1150, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=350)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1150, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -350,11 +355,11 @@ def show_flight_status(parent, switch_page, back_page, back_args):
     flights = db_utils.get_all_flights()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1000, height=350)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1000, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1000, height=350)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1000, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -402,6 +407,86 @@ def show_flight_status(parent, switch_page, back_page, back_args):
         opt.pack(side="left", padx=5)
 
 def update_flight_status(flight_id, new_status, switch_page, current_page, back_page, back_args):
-    db_utils.update_flight_status(flight_id, new_status)
+    db_utils.update_flight_status(flight_id, new_status, manual_override="Yes")
     messagebox.showinfo("Success", f"Flight {flight_id} status updated to {new_status}!")
     switch_page(current_page, back_page, back_args)
+
+
+# ===================== ARRIVING FLIGHTS TOPLEVEL WINDOW =====================
+def show_arriving_flights_window(parent):
+    # Create top level window
+    arriving_win = tk.Toplevel(parent.winfo_toplevel())
+    arriving_win.title("Arriving Flights Tracker")
+    arriving_win.geometry("1100x650")
+    arriving_win.configure(bg=BG_COLOR)
+    
+    # Title
+    tk.Label(arriving_win, text="ARRIVING FLIGHTS", font=("Segoe UI", 24, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
+    
+    current_airport = get_airport()
+    
+    # Get all arrival flights for current airport
+    all_flights = db_utils.get_all_flights()
+    arriving_flights = [f for f in all_flights if f.get('flight_type') == 'ARRIVAL' and f.get('destination') == current_airport]
+    
+    if not arriving_flights:
+        tk.Label(arriving_win, text=f"No arriving flights to {current_airport}", font=("Segoe UI", 12), fg=SUB_TEXT, bg=BG_COLOR).pack(pady=30)
+        
+        # Close Button
+        close_btn = tk.Button(arriving_win, text="Close Window", font=("Segoe UI", 11, "bold"), bg=BTN_SECONDARY, fg="white", relief="flat", padx=20, pady=5, cursor="hand2", command=arriving_win.destroy)
+        close_btn.pack(pady=10)
+        return
+    
+    # Create scrollable frame
+    container = tk.Frame(arriving_win, bg=CARD_COLOR, width=1050, height=520)
+    container.pack(padx=20, pady=10, fill="both", expand=True)
+    container.pack_propagate(False)
+    
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=520)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    
+    list_frame = tk.Frame(canvas, bg=CARD_COLOR)
+    canvas.create_window((0, 0), window=list_frame, anchor="nw")
+    
+    def on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    list_frame.bind("<Configure>", on_frame_configure)
+    
+    # Header row
+    header_frame = tk.Frame(list_frame, bg="#475569")
+    header_frame.pack(fill="x", padx=10, pady=10)
+    
+    headers = ["Flight ID", "Airline", "Origin", "Status", "Arrival Time", "Gate", "Runway", "Fueling"]
+    header_widths = [14, 16, 16, 14, 14, 10, 10, 14]
+    
+    for header_text, width in zip(headers, header_widths):
+        tk.Label(header_frame, text=header_text, font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=width).pack(side="left")
+    
+    # Flight rows
+    for flight in arriving_flights:
+        row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
+        row_frame.pack(fill="x", padx=10, pady=5)
+        
+        tk.Label(row_frame, text=flight['flight_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=14).pack(side="left")
+        tk.Label(row_frame, text=flight.get('airline', ''), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=16).pack(side="left")
+        tk.Label(row_frame, text=flight.get('origin', ''), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=16).pack(side="left")
+        
+        # Status with color
+        status = flight.get('status', 'SCHEDULED')
+        status_color = "#22c55e" if status == "ARRIVED" else "#f59e0b" if status == "IN AIR" else TEXT_COLOR
+        tk.Label(row_frame, text=status, font=("Segoe UI", 10), fg=status_color, bg=CARD_COLOR, width=14).pack(side="left")
+        
+        tk.Label(row_frame, text=flight.get('arrival_time', ''), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=14).pack(side="left")
+        tk.Label(row_frame, text=flight.get('gate', '-'), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+        tk.Label(row_frame, text=flight.get('runway', '-'), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+        
+        fueling = flight.get('fueling_status', 'PENDING')
+        fueling_color = "#22c55e" if fueling == "COMPLETED" else "#f59e0b" if fueling == "IN PROGRESS" else TEXT_COLOR
+        tk.Label(row_frame, text=fueling, font=("Segoe UI", 9), fg=fueling_color, bg=CARD_COLOR, width=14).pack(side="left")
+
+    # Close Button
+    close_btn = tk.Button(arriving_win, text="Close Window", font=("Segoe UI", 11, "bold"), bg=BTN_SECONDARY, fg="white", relief="flat", padx=20, pady=8, cursor="hand2", command=arriving_win.destroy)
+    close_btn.pack(pady=15)

@@ -1,4 +1,3 @@
-runway_id,length,status
-R1,4000,AVAILABLE
-R2,3500,AVAILABLE
-R3,4500,AVAILABLE
+runway_id,length,status,manual_override
+R1,4000,AVAILABLE,
+R2,3500,AVAILABLE,

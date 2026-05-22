@@ -122,11 +122,11 @@ def show_baggage_info(parent, switch_page, back_page, back_args):
     passengers = db_utils.get_all_passengers()
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=380)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=380)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
@@ -169,11 +169,11 @@ def show_checkedin_passengers(parent, switch_page, back_page, back_args):
     checkedin = [p for p in passengers if p['checked_in'] == "Yes"]
 
     # Create a frame for the list (scrollable)
-    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=350)
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1050, height=520)
     container.pack(padx=20, pady=10, fill="both", expand=True)
     container.pack_propagate(False)
 
-    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=350)
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1050, height=520)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
