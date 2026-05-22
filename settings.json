@@ -1,7 +1,8 @@
 {
-  "current_airport": "Dubai",
+  "current_airport": "Chennai",
   "auto_checkin_enabled": true,
   "crew_rest_time": 30,
   "fueling_time": 45,
-  "checkin_threshold": 50
+  "checkin_threshold": 50,
+  "time_speed": 5
 }

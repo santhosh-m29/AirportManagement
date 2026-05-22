@@ -4,7 +4,6 @@ Airport Settings Management
 
 import json
 import os
-import db_utils
 
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
 
@@ -41,22 +40,39 @@ def set_airport(airport_name):
     settings = load_settings()
     settings["current_airport"] = airport_name
     save_settings(settings)
-    db_utils.update_home_airport(airport_name)
 
 def get_crew_rest_time():
     """Get crew rest time in minutes."""
     settings = load_settings()
     return settings.get("crew_rest_time", 30)
 
+def set_crew_rest_time(minutes):
+    """Set crew rest time in minutes."""
+    settings = load_settings()
+    settings["crew_rest_time"] = int(minutes)
+    save_settings(settings)
+
 def get_fueling_time():
     """Get fueling time in minutes."""
     settings = load_settings()
     return settings.get("fueling_time", 45)
 
+def set_fueling_time(minutes):
+    """Set fueling time in minutes."""
+    settings = load_settings()
+    settings["fueling_time"] = int(minutes)
+    save_settings(settings)
+
 def get_checkin_threshold():
     """Get check-in threshold percentage."""
     settings = load_settings()
     return settings.get("checkin_threshold", 50)
+
+def set_checkin_threshold(threshold):
+    """Set check-in threshold percentage."""
+    settings = load_settings()
+    settings["checkin_threshold"] = int(threshold)
+    save_settings(settings)
 
 def is_auto_checkin_enabled():
     """Check if auto check-in is enabled."""

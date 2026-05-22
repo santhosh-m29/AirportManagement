@@ -262,13 +262,17 @@ def show_flight_schedule(parent, switch_page, back_page, back_args):
 
         c_mins = _parse_time(current_time_str)
 
+        from airport_settings import get_airport
+        current_airport = get_airport()
         for flight in flights:
             row_frame = tk.Frame(rows_container, bg=CARD_COLOR)
             row_frame.pack(fill="x", padx=10, pady=5)
 
             tk.Label(row_frame, text=flight['flight_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
             tk.Label(row_frame, text=flight['airline_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=12).pack(side="left")
-            route = f"{flight['origin']}->{flight['destination']}"
+            orig = current_airport if flight.get('flight_type') != 'ARRIVAL' else flight.get('origin', '')
+            dest = current_airport if flight.get('flight_type') == 'ARRIVAL' else flight.get('destination', '')
+            route = f"{orig}->{dest}"
             tk.Label(row_frame, text=route, font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=16).pack(side="left")
             
             dep = flight.get('departure_time') or flight.get('departure')
@@ -381,11 +385,15 @@ def show_flight_status(parent, switch_page, back_page, back_args):
     tk.Label(header_frame, text="Manual Override", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=24).pack(side="left")
 
     # List items
+    from airport_settings import get_airport as _get_airport
+    _current_airport = _get_airport()
     for flight in flights:
         row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
         row_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(row_frame, text=flight['flight_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=18).pack(side="left")
-        route = f"{flight['origin']}->{flight['destination']}"
+        orig = _current_airport if flight.get('flight_type') != 'ARRIVAL' else flight.get('origin', '')
+        dest = _current_airport if flight.get('flight_type') == 'ARRIVAL' else flight.get('destination', '')
+        route = f"{orig}->{dest}"
         tk.Label(row_frame, text=route, font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=28).pack(side="left")
         
         status = flight.get('status', '')
@@ -427,10 +435,10 @@ def show_arriving_flights_window(parent):
     
     # Get all arrival flights for current airport
     all_flights = db_utils.get_all_flights()
-    arriving_flights = [f for f in all_flights if f.get('flight_type') == 'ARRIVAL' and f.get('destination') == current_airport]
+    arriving_flights = [f for f in all_flights if f.get('flight_type') == 'ARRIVAL']
     
     if not arriving_flights:
-        tk.Label(arriving_win, text=f"No arriving flights to {current_airport}", font=("Segoe UI", 12), fg=SUB_TEXT, bg=BG_COLOR).pack(pady=30)
+        tk.Label(arriving_win, text="No arriving flights found.", font=("Segoe UI", 12), fg=SUB_TEXT, bg=BG_COLOR).pack(pady=30)
         
         # Close Button
         close_btn = tk.Button(arriving_win, text="Close Window", font=("Segoe UI", 11, "bold"), bg=BTN_SECONDARY, fg="white", relief="flat", padx=20, pady=5, cursor="hand2", command=arriving_win.destroy)

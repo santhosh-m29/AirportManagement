@@ -12,7 +12,8 @@ import checkin_module
 import db_utils
 from airport_settings import (
     load_settings, save_settings, get_airport, set_airport, get_crew_rest_time,
-    get_fueling_time, get_checkin_threshold, is_auto_checkin_enabled, set_auto_checkin
+    get_fueling_time, get_checkin_threshold, is_auto_checkin_enabled, set_auto_checkin,
+    set_crew_rest_time, set_fueling_time, set_checkin_threshold
 )
 
 # ===================== PREMIUM DESIGN SYSTEM =====================
@@ -191,13 +192,83 @@ def route_module(module_name):
         "MANAGE AIRLINES": airline_module.show_airline_dashboard,
         "TICKET COUNTER": ticket_module.show_ticket_dashboard,
         "ATC": atc_module.show_atc_dashboard,
+        "ARRIVING": show_arriving_flights,
         "CHECKIN": checkin_module.show_checkin_dashboard
     }
 
     # Pass show_home into module
     switch_page(module_routes[module_name], show_home, ())
 
-
+# ===================== ARRIVING FLIGHTS =====================
+def show_arriving_flights(parent, switch_page, back_page, back_args):
+    parent.configure(bg=BG_COLOR)
+    
+    # Header
+    header = tk.Frame(parent, bg=BG_COLOR)
+    header.pack(fill="x", pady=10)
+    root.set_nav_button("Back", lambda: switch_page(back_page, *back_args))
+    
+    tk.Label(parent, text="ARRIVING FLIGHTS", font=("Segoe UI", 24, "bold"), fg=TEXT_COLOR, bg=BG_COLOR).pack(pady=20)
+    
+    current_airport = get_airport()
+    
+    # Get all arrival flights for current airport
+    all_flights = db_utils.get_all_flights()
+    arriving_flights = [f for f in all_flights if f.get('flight_type') == 'ARRIVAL']
+    
+    if not arriving_flights:
+        tk.Label(parent, text="No arriving flights found.", font=("Segoe UI", 12), fg=SUB_TEXT, bg=BG_COLOR).pack(pady=30)
+        return
+    
+    # Create scrollable frame
+    container = tk.Frame(parent, bg=CARD_COLOR, width=1100, height=520)
+    container.pack(padx=20, pady=10, fill="both", expand=True)
+    container.pack_propagate(False)
+    
+    canvas = tk.Canvas(container, bg=CARD_COLOR, highlightthickness=0, width=1100, height=520)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    
+    list_frame = tk.Frame(canvas, bg=CARD_COLOR)
+    canvas.create_window((0, 0), window=list_frame, anchor="nw")
+    
+    def on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    list_frame.bind("<Configure>", on_frame_configure)
+    
+    # Header row
+    header_frame = tk.Frame(list_frame, bg="#475569")
+    header_frame.pack(fill="x", padx=10, pady=10)
+    
+    headers = ["Flight ID", "Airline", "Origin", "Status", "Arrival Time", "Gate", "Runway", "Fueling"]
+    header_widths = [15, 18, 18, 16, 15, 10, 10, 15]
+    
+    for header_text, width in zip(headers, header_widths):
+        tk.Label(header_frame, text=header_text, font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg="#475569", width=width).pack(side="left")
+    
+    # Flight rows
+    for flight in arriving_flights:
+        row_frame = tk.Frame(list_frame, bg=CARD_COLOR)
+        row_frame.pack(fill="x", padx=10, pady=5)
+        
+        tk.Label(row_frame, text=flight['flight_id'], font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
+        tk.Label(row_frame, text=flight.get('airline', ''), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=18).pack(side="left")
+        tk.Label(row_frame, text=flight.get('origin', ''), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=18).pack(side="left")
+        
+        # Status with color
+        status = flight.get('status', 'SCHEDULED')
+        status_color = "#10b981" if status == "ARRIVED" else "#f59e0b" if status == "IN AIR" else TEXT_COLOR
+        tk.Label(row_frame, text=status, font=("Segoe UI", 10), fg=status_color, bg=CARD_COLOR, width=16).pack(side="left")
+        
+        tk.Label(row_frame, text=flight.get('arrival_time', ''), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=15).pack(side="left")
+        tk.Label(row_frame, text=flight.get('gate', '-'), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+        tk.Label(row_frame, text=flight.get('runway', '-'), font=("Segoe UI", 10), fg=TEXT_COLOR, bg=CARD_COLOR, width=10).pack(side="left")
+        
+        fueling = flight.get('fueling_status', 'PENDING')
+        fueling_color = "#10b981" if fueling == "COMPLETED" else "#f59e0b" if fueling == "IN PROGRESS" else TEXT_COLOR
+        tk.Label(row_frame, text=fueling, font=("Segoe UI", 9), fg=fueling_color, bg=CARD_COLOR, width=15).pack(side="left")
 
 # ===================== SETTINGS PANEL =====================
 def show_settings():
@@ -300,28 +371,31 @@ def show_settings():
             
             # Validate operational settings
             try:
-                crew_rest = int(crew_rest_var.get())
-                fueling_time = int(fueling_var.get())
-                checkin_thresh = int(checkin_var.get())
-                if crew_rest < 0 or fueling_time < 0 or checkin_thresh < 0:
+                crew_rest_val = int(crew_rest_var.get())
+                fueling_time_val = int(fueling_var.get())
+                checkin_thresh_val = int(checkin_var.get())
+                if crew_rest_val < 0 or fueling_time_val < 0 or checkin_thresh_val < 0:
                     messagebox.showerror("Invalid Values", "All values must be positive.")
                     return
             except ValueError:
                 messagebox.showerror("Invalid Values", "Operational settings must be numbers.")
                 return
             
-            # Apply settings
+            # Apply all settings atomically — load once, update all, save once
+            settings = load_settings()
+            settings['current_airport'] = airport_var.get()
+            settings['auto_checkin_enabled'] = auto_checkin_var.get()
+            settings['crew_rest_time'] = crew_rest_val
+            settings['fueling_time'] = fueling_time_val
+            settings['checkin_threshold'] = checkin_thresh_val
+            settings['time_speed'] = new_speed
+            save_settings(settings)
+
+            # Apply in-memory values
             set_sim_time(new_time)
             set_time_speed(new_speed)
             set_airport(airport_var.get())
             set_auto_checkin(auto_checkin_var.get())
-            
-            # Save to settings file
-            settings = load_settings()
-            settings['crew_rest_time'] = crew_rest
-            settings['fueling_time'] = fueling_time
-            settings['checkin_threshold'] = checkin_thresh
-            save_settings(settings)
             
             clock_label.config(text=f"Simulation Clock: {get_sim_time().strftime('%Y-%m-%d %H:%M')} | Airport: {airport_var.get()}")
             messagebox.showinfo("Settings Updated", "All settings have been applied successfully!")
